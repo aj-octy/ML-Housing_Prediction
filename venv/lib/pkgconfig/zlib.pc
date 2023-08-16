@@ -1,0 +1,13 @@
+prefix=/Users/aj/Desktop/2023/practice/py/Untitled_Folder/ml/LR/venv
+exec_prefix=/Users/aj/Desktop/2023/practice/py/Untitled_Folder/ml/LR/venv
+libdir=/Users/aj/Desktop/2023/practice/py/Untitled_Folder/ml/LR/venv/lib
+sharedlibdir=/Users/aj/Desktop/2023/practice/py/Untitled_Folder/ml/LR/venv/lib
+includedir=/Users/aj/Desktop/2023/practice/py/Untitled_Folder/ml/LR/venv/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}
