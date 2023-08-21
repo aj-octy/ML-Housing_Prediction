@@ -42,7 +42,6 @@ DATA_VALIDATION_REPORT_PAGE_FILE_NAME_KEY = "report_page_file_name"
 
 
 
-
 # Data Transformation related variables
 DATA_TRANSFORMATION_ARTIFACT_DIR = "data_transformation"
 DATA_TRANSFORMATION_CONFIG_KEY = "data_transformation_config"

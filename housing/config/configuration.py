@@ -148,10 +148,8 @@ class Configuartion:
 
             logging.info(f"Data transformation config: {data_transformation_config}")
             return data_transformation_config
-            
-            
         except Exception as e:
-            raise Exception(e,sys) from e
+            raise HousingException(e,sys) from e
 
     def get_model_trainer_config(self) -> ModelTrainerConfig:
         pass
