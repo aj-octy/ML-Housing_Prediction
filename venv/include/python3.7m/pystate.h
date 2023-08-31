@@ -79,11 +79,8 @@ typedef struct {
 #define _PyCoreConfig_INIT \
     (_PyCoreConfig){ \
         .install_signal_handlers = -1, \
-        .ignore_environment = -1, \
         .use_hash_seed = -1, \
         .coerce_c_locale = -1, \
-        .faulthandler = -1, \
-        .tracemalloc = -1, \
         .utf8_mode = -1, \
         .argc = -1, \
         .nmodule_search_path = -1}
@@ -216,7 +213,6 @@ typedef struct _ts {
     struct _ts *next;
     PyInterpreterState *interp;
 
-    /* Borrowed reference to the current frame (it can be NULL) */
     struct _frame *frame;
     int recursion_depth;
     char overflowed; /* The stack has overflowed. Allow 50 more calls

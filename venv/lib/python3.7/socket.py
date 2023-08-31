@@ -724,11 +724,7 @@ def create_connection(address, timeout=_GLOBAL_DEFAULT_TIMEOUT,
                 sock.close()
 
     if err is not None:
-        try:
-            raise err
-        finally:
-            # Break explicitly a reference cycle
-            err = None
+        raise err
     else:
         raise error("getaddrinfo returns an empty list")
 

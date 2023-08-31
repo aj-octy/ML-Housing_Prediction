@@ -323,20 +323,7 @@ class partialmethod(object):
     callables as instance methods.
     """
 
-    def __init__(*args, **keywords):
-        if len(args) >= 2:
-            self, func, *args = args
-        elif not args:
-            raise TypeError("descriptor '__init__' of partialmethod "
-                            "needs an argument")
-        elif 'func' in keywords:
-            func = keywords.pop('func')
-            self, *args = args
-        else:
-            raise TypeError("type 'partialmethod' takes at least one argument, "
-                            "got %d" % (len(args)-1))
-        args = tuple(args)
-
+    def __init__(self, func, *args, **keywords):
         if not callable(func) and not hasattr(func, "__get__"):
             raise TypeError("{!r} is not callable or a descriptor"
                                  .format(func))
@@ -426,7 +413,7 @@ class _HashedSeq(list):
 
 def _make_key(args, kwds, typed,
              kwd_mark = (object(),),
-             fasttypes = {int, str},
+             fasttypes = {int, str, frozenset, type(None)},
              tuple=tuple, type=type, len=len):
     """Make a cache key from optionally typed positional and keyword arguments
 
@@ -471,7 +458,7 @@ def lru_cache(maxsize=128, typed=False):
     with f.cache_info().  Clear the cache and statistics with f.cache_clear().
     Access the underlying function with f.__wrapped__.
 
-    See:  http://en.wikipedia.org/wiki/Cache_replacement_policies#Least_recently_used_(LRU)
+    See:  http://en.wikipedia.org/wiki/Cache_algorithms#Least_Recently_Used
 
     """
 
@@ -482,11 +469,8 @@ def lru_cache(maxsize=128, typed=False):
 
     # Early detection of an erroneous call to @lru_cache without any arguments
     # resulting in the inner function being passed to maxsize instead of an
-    # integer or None.  Negative maxsize is treated as 0.
-    if isinstance(maxsize, int):
-        if maxsize < 0:
-            maxsize = 0
-    elif maxsize is not None:
+    # integer or None.
+    if maxsize is not None and not isinstance(maxsize, int):
         raise TypeError('Expected maxsize to be an integer or None')
 
     def decorating_function(user_function):
@@ -513,10 +497,10 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
     if maxsize == 0:
 
         def wrapper(*args, **kwds):
-            # No caching -- just a statistics update
+            # No caching -- just a statistics update after a successful call
             nonlocal misses
-            misses += 1
             result = user_function(*args, **kwds)
+            misses += 1
             return result
 
     elif maxsize is None:
@@ -529,9 +513,9 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
             if result is not sentinel:
                 hits += 1
                 return result
-            misses += 1
             result = user_function(*args, **kwds)
             cache[key] = result
+            misses += 1
             return result
 
     else:
@@ -553,7 +537,6 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
                     link[NEXT] = root
                     hits += 1
                     return result
-                misses += 1
             result = user_function(*args, **kwds)
             with lock:
                 if key in cache:
@@ -591,6 +574,7 @@ def _lru_cache_wrapper(user_function, maxsize, typed, _CacheInfo):
                     # Use the cache_len bound method instead of the len() function
                     # which could potentially be wrapped in an lru_cache itself.
                     full = (cache_len() >= maxsize)
+                misses += 1
             return result
 
     def cache_info():
@@ -833,13 +817,8 @@ def singledispatch(func):
         return func
 
     def wrapper(*args, **kw):
-        if not args:
-            raise TypeError(f'{funcname} requires at least '
-                            '1 positional argument')
-
         return dispatch(args[0].__class__)(*args, **kw)
 
-    funcname = getattr(func, '__name__', 'singledispatch function')
     registry[object] = func
     wrapper.register = register
     wrapper.dispatch = dispatch

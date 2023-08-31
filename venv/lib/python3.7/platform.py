@@ -72,7 +72,7 @@
 #            type information
 #    0.4.0 - added win32_ver() and modified the platform() output for WinXX
 #    0.3.4 - fixed a bug in _follow_symlinks()
-#    0.3.3 - fixed popen() and "file" command invocation bugs
+#    0.3.3 - fixed popen() and "file" command invokation bugs
 #    0.3.2 - added architecture() API and support for it in platform()
 #    0.3.1 - fixed syscmd_ver() RE to support Windows NT
 #    0.3.0 - added system alias support
@@ -136,35 +136,6 @@ except AttributeError:
 # Constant used by test_platform to test linux_distribution().
 _UNIXCONFDIR = '/etc'
 
-# Helper for comparing two version number strings.
-# Based on the description of the PHP's version_compare():
-# http://php.net/manual/en/function.version-compare.php
-
-_ver_stages = {
-    # any string not found in this dict, will get 0 assigned
-    'dev': 10,
-    'alpha': 20, 'a': 20,
-    'beta': 30, 'b': 30,
-    'c': 40,
-    'RC': 50, 'rc': 50,
-    # number, will get 100 assigned
-    'pl': 200, 'p': 200,
-}
-
-_component_re = re.compile(r'([0-9]+|[._+-])')
-
-def _comparable_version(version):
-    result = []
-    for v in _component_re.split(version):
-        if v not in '._+-':
-            try:
-                v = int(v, 10)
-                t = 100
-            except ValueError:
-                t = _ver_stages.get(v, 0)
-            result.extend((t, v))
-    return result
-
 ### Platform specific APIs
 
 _libc_search = re.compile(b'(__libc_init)'
@@ -173,7 +144,9 @@ _libc_search = re.compile(b'(__libc_init)'
                           b'|'
                           br'(libc(_\w+)?\.so(?:\.(\d[0-9.]*))?)', re.ASCII)
 
-def libc_ver(executable=sys.executable, lib='', version='', chunksize=16384):
+def libc_ver(executable=sys.executable, lib='', version='',
+
+             chunksize=16384):
 
     """ Tries to determine the libc version that the file executable
         (which defaults to the Python interpreter) is linked against.
@@ -188,7 +161,6 @@ def libc_ver(executable=sys.executable, lib='', version='', chunksize=16384):
         The file is read and scanned in chunks of chunksize bytes.
 
     """
-    V = _comparable_version
     if hasattr(os.path, 'realpath'):
         # Python 2.2 introduced os.path.realpath(); it is used
         # here to work around problems with Cygwin not being
@@ -197,19 +169,17 @@ def libc_ver(executable=sys.executable, lib='', version='', chunksize=16384):
     with open(executable, 'rb') as f:
         binary = f.read(chunksize)
         pos = 0
-        while pos < len(binary):
+        while 1:
             if b'libc' in binary or b'GLIBC' in binary:
                 m = _libc_search.search(binary, pos)
             else:
                 m = None
-            if not m or m.end() == len(binary):
-                chunk = f.read(chunksize)
-                if chunk:
-                    binary = binary[max(pos, len(binary) - 1000):] + chunk
-                    pos = 0
-                    continue
-                if not m:
+            if not m:
+                binary = f.read(chunksize)
+                if not binary:
                     break
+                pos = 0
+                continue
             libcinit, glibc, glibcversion, so, threads, soversion = [
                 s.decode('latin1') if s is not None else s
                 for s in m.groups()]
@@ -219,12 +189,12 @@ def libc_ver(executable=sys.executable, lib='', version='', chunksize=16384):
                 if lib != 'glibc':
                     lib = 'glibc'
                     version = glibcversion
-                elif V(glibcversion) > V(version):
+                elif glibcversion > version:
                     version = glibcversion
             elif so:
                 if lib != 'glibc':
                     lib = 'libc'
-                    if soversion and (not version or V(soversion) > V(version)):
+                    if soversion and soversion > version:
                         version = soversion
                     if threads and version[-len(threads):] != threads:
                         version = version + threads
@@ -243,29 +213,27 @@ def _dist_try_harder(distname, version, id):
     if os.path.exists('/var/adm/inst-log/info'):
         # SuSE Linux stores distribution information in that file
         distname = 'SuSE'
-        with open('/var/adm/inst-log/info') as f:
-            for line in f:
-                tv = line.split()
-                if len(tv) == 2:
-                    tag, value = tv
-                else:
-                    continue
-                if tag == 'MIN_DIST_VERSION':
-                    version = value.strip()
-                elif tag == 'DIST_IDENT':
-                    values = value.split('-')
-                    id = values[2]
+        for line in open('/var/adm/inst-log/info'):
+            tv = line.split()
+            if len(tv) == 2:
+                tag, value = tv
+            else:
+                continue
+            if tag == 'MIN_DIST_VERSION':
+                version = value.strip()
+            elif tag == 'DIST_IDENT':
+                values = value.split('-')
+                id = values[2]
         return distname, version, id
 
     if os.path.exists('/etc/.installed'):
         # Caldera OpenLinux has some infos in that file (thanks to Colin Kong)
-        with open('/etc/.installed') as f:
-            for line in f:
-                pkg = line.split('-')
-                if len(pkg) >= 2 and pkg[0] == 'OpenLinux':
-                    # XXX does Caldera support non Intel platforms ? If yes,
-                    #     where can we find the needed id ?
-                    return 'OpenLinux', pkg[1], id
+        for line in open('/etc/.installed'):
+            pkg = line.split('-')
+            if len(pkg) >= 2 and pkg[0] == 'OpenLinux':
+                # XXX does Caldera support non Intel platforms ? If yes,
+                #     where can we find the needed id ?
+                return 'OpenLinux', pkg[1], id
 
     if os.path.isdir('/usr/lib/setup'):
         # Check for slackware version tag file (thanks to Greg Andruk)
@@ -421,7 +389,6 @@ def popen(cmd, mode='r', bufsize=-1):
     warnings.warn('use os.popen instead', DeprecationWarning, stacklevel=2)
     return os.popen(cmd, mode, bufsize)
 
-
 def _norm_version(version, build=''):
 
     """ Normalize the version and build strings and return a single
@@ -535,6 +502,10 @@ def win32_ver(release='', version='', csd='', ptype=''):
         from sys import getwindowsversion
     except ImportError:
         return release, version, csd, ptype
+    try:
+        from winreg import OpenKeyEx, QueryValueEx, CloseKey, HKEY_LOCAL_MACHINE
+    except ImportError:
+        from _winreg import OpenKeyEx, QueryValueEx, CloseKey, HKEY_LOCAL_MACHINE
 
     winver = getwindowsversion()
     maj, min, build = winver.platform_version or winver[:3]
@@ -560,20 +531,16 @@ def win32_ver(release='', version='', csd='', ptype=''):
                    _WIN32_SERVER_RELEASES.get((maj, None)) or
                    release)
 
+    key = None
     try:
-        try:
-            import winreg
-        except ImportError:
-            import _winreg as winreg
-    except ImportError:
+        key = OpenKeyEx(HKEY_LOCAL_MACHINE,
+                        r'SOFTWARE\Microsoft\Windows NT\CurrentVersion')
+        ptype = QueryValueEx(key, 'CurrentType')[0]
+    except:
         pass
-    else:
-        try:
-            cvkey = r'SOFTWARE\Microsoft\Windows NT\CurrentVersion'
-            with winreg.OpenKeyEx(winreg.HKEY_LOCAL_MACHINE, cvkey) as key:
-                ptype = winreg.QueryValueEx(key, 'CurrentType')[0]
-        except OSError:
-            pass
+    finally:
+        if key:
+            CloseKey(key)
 
     return release, version, csd, ptype
 

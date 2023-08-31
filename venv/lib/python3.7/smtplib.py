@@ -54,7 +54,7 @@ import datetime
 import sys
 from email.base64mime import body_encode as encode_base64
 
-__all__ = ["SMTPException", "SMTPNotSupportedError", "SMTPServerDisconnected", "SMTPResponseException",
+__all__ = ["SMTPException", "SMTPServerDisconnected", "SMTPResponseException",
            "SMTPSenderRefused", "SMTPRecipientsRefused", "SMTPDataError",
            "SMTPConnectError", "SMTPHeloError", "SMTPAuthenticationError",
            "quoteaddr", "quotedata", "SMTP"]
@@ -361,15 +361,10 @@ class SMTP:
     def putcmd(self, cmd, args=""):
         """Send a command to the server."""
         if args == "":
-            s = cmd
+            str = '%s%s' % (cmd, CRLF)
         else:
-            s = f'{cmd} {args}'
-        if '\r' in s or '\n' in s:
-            s = s.replace('\n', '\\n').replace('\r', '\\r')
-            raise ValueError(
-                f'command and arguments contain prohibited newline characters: {s}'
-            )
-        self.send(f'{s}{CRLF}')
+            str = '%s %s%s' % (cmd, args, CRLF)
+        self.send(str)
 
     def getreply(self):
         """Get a reply from the server.
@@ -518,7 +513,7 @@ class SMTP:
         """SMTP 'noop' command -- doesn't do anything :>"""
         return self.docmd("noop")
 
-    def mail(self, sender, options=()):
+    def mail(self, sender, options=[]):
         """SMTP 'mail' command -- begins mail xfer session.
 
         This method may raise the following exceptions:
@@ -539,7 +534,7 @@ class SMTP:
         self.putcmd("mail", "FROM:%s%s" % (quoteaddr(sender), optionlist))
         return self.getreply()
 
-    def rcpt(self, recip, options=()):
+    def rcpt(self, recip, options=[]):
         """SMTP 'rcpt' command -- indicates 1 recipient for this mail."""
         optionlist = ''
         if options and self.does_esmtp:
@@ -620,7 +615,7 @@ class SMTP:
 
         It will be called to process the server's challenge response; the
         challenge argument it is passed will be a bytes.  It should return
-        an ASCII string that will be base64 encoded and sent to the server.
+        bytes data that will be base64 encoded and sent to the server.
 
         Keyword arguments:
             - initial_response_ok: Allow sending the RFC 4954 initial-response
@@ -767,7 +762,7 @@ class SMTP:
                                  "exclusive")
             if keyfile is not None or certfile is not None:
                 import warnings
-                warnings.warn("keyfile and certfile are deprecated, use a "
+                warnings.warn("keyfile and certfile are deprecated, use a"
                               "custom context instead", DeprecationWarning, 2)
             if context is None:
                 context = ssl._create_stdlib_context(certfile=certfile,
@@ -790,8 +785,8 @@ class SMTP:
             raise SMTPResponseException(resp, reply)
         return (resp, reply)
 
-    def sendmail(self, from_addr, to_addrs, msg, mail_options=(),
-                 rcpt_options=()):
+    def sendmail(self, from_addr, to_addrs, msg, mail_options=[],
+                 rcpt_options=[]):
         """This command performs an entire mail transaction.
 
         The arguments are:
@@ -895,7 +890,7 @@ class SMTP:
         return senderrs
 
     def send_message(self, msg, from_addr=None, to_addrs=None,
-                     mail_options=(), rcpt_options=()):
+                mail_options=[], rcpt_options={}):
         """Converts message to a bytestring and passes it to sendmail.
 
         The arguments are as for sendmail, except that msg is an
@@ -963,7 +958,7 @@ class SMTP:
             if international:
                 g = email.generator.BytesGenerator(
                     bytesmsg, policy=msg.policy.clone(utf8=True))
-                mail_options = (*mail_options, 'SMTPUTF8', 'BODY=8BITMIME')
+                mail_options += ['SMTPUTF8', 'BODY=8BITMIME']
             else:
                 g = email.generator.BytesGenerator(bytesmsg)
             g.flatten(msg_copy, linesep='\r\n')
@@ -1024,7 +1019,7 @@ if _have_ssl:
                                  "exclusive")
             if keyfile is not None or certfile is not None:
                 import warnings
-                warnings.warn("keyfile and certfile are deprecated, use a "
+                warnings.warn("keyfile and certfile are deprecated, use a"
                               "custom context instead", DeprecationWarning, 2)
             self.keyfile = keyfile
             self.certfile = certfile

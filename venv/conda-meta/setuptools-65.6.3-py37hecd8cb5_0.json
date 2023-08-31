@@ -3756,7 +3756,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "setuptools",
+  "requested_spec": "None",
   "sha256": "da76fb004357da7405e18216b3ac67fb6d5f261d1c8daae7e57ad45e2d926f2d",
   "size": 1176564,
   "subdir": "osx-64",

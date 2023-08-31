@@ -1,12 +1,13 @@
-"Test help, coverage 87%."
+'''Test idlelib.help.
 
+Coverage: 87%
+'''
 from idlelib import help
-import unittest
 from test.support import requires
 requires('gui')
 from os.path import abspath, dirname, join
 from tkinter import Tk
-
+import unittest
 
 class HelpFrameTest(unittest.TestCase):
 
@@ -28,7 +29,6 @@ class HelpFrameTest(unittest.TestCase):
     def test_line1(self):
         text = self.frame.text
         self.assertEqual(text.get('1.0', '1.end'), ' IDLE ')
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)

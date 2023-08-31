@@ -18,8 +18,8 @@ import sys
 import threading
 import array
 import queue
-import time
 
+from time import time as _time
 from traceback import format_exc
 
 from . import connection
@@ -50,7 +50,7 @@ if view_types[0] is not list:       # only needed in Py3.0
 
 class Token(object):
     '''
-    Type to uniquely identify a shared object
+    Type to uniquely indentify a shared object
     '''
     __slots__ = ('typeid', 'address', 'id')
 
@@ -351,30 +351,10 @@ class Server(object):
         finally:
             self.stop_event.set()
 
-    def create(*args, **kwds):
+    def create(self, c, typeid, *args, **kwds):
         '''
         Create a new shared object and return its id
         '''
-        if len(args) >= 3:
-            self, c, typeid, *args = args
-        elif not args:
-            raise TypeError("descriptor 'create' of 'Server' object "
-                            "needs an argument")
-        else:
-            if 'typeid' not in kwds:
-                raise TypeError('create expected at least 2 positional '
-                                'arguments, got %d' % (len(args)-1))
-            typeid = kwds.pop('typeid')
-            if len(args) >= 2:
-                self, c, *args = args
-            else:
-                if 'c' not in kwds:
-                    raise TypeError('create expected at least 2 positional '
-                                    'arguments, got %d' % (len(args)-1))
-                c = kwds.pop('c')
-                self, *args = args
-        args = tuple(args)
-
         with self.mutex:
             callable, exposed, method_to_typeid, proxytype = \
                       self.registry[typeid]
@@ -596,13 +576,10 @@ class BaseManager(object):
         util.info('manager serving at %r', server.address)
         server.serve_forever()
 
-    def _create(*args, **kwds):
+    def _create(self, typeid, *args, **kwds):
         '''
         Create a new shared object; return the token and exposed tuple
         '''
-        self, typeid, *args = args
-        args = tuple(args)
-
         assert self._state.value == State.STARTED, 'server not yet started'
         conn = self._Client(self._address, authkey=self._authkey)
         try:
@@ -805,7 +782,7 @@ class BaseProxy(object):
 
     def _callmethod(self, methodname, args=(), kwds={}):
         '''
-        Try to call a method of the referent and return a copy of the result
+        Try to call a method of the referrent and return a copy of the result
         '''
         try:
             conn = self._tls.connection
@@ -1068,13 +1045,13 @@ class ConditionProxy(AcquirerProxy):
         if result:
             return result
         if timeout is not None:
-            endtime = time.monotonic() + timeout
+            endtime = _time() + timeout
         else:
             endtime = None
             waittime = None
         while not result:
             if endtime is not None:
-                waittime = endtime - time.monotonic()
+                waittime = endtime - _time()
                 if waittime <= 0:
                     break
             self.wait(waittime)
@@ -1157,13 +1134,10 @@ class ListProxy(BaseListProxy):
 
 
 DictProxy = MakeProxyType('DictProxy', (
-    '__contains__', '__delitem__', '__getitem__', '__iter__', '__len__',
-    '__setitem__', 'clear', 'copy', 'get', 'items',
+    '__contains__', '__delitem__', '__getitem__', '__len__',
+    '__setitem__', 'clear', 'copy', 'get', 'has_key', 'items',
     'keys', 'pop', 'popitem', 'setdefault', 'update', 'values'
     ))
-DictProxy._method_to_typeid_ = {
-    '__iter__': 'Iterator',
-    }
 
 
 ArrayProxy = MakeProxyType('ArrayProxy', (

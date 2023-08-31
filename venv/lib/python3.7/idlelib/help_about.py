@@ -195,13 +195,11 @@ class AboutDialog(Toplevel):
 
     def ok(self, event=None):
         "Dismiss help_about dialog."
-        self.grab_release()
         self.destroy()
 
 
 if __name__ == '__main__':
-    from unittest import main
-    main('idlelib.idle_test.test_help_about', verbosity=2, exit=False)
-
+    import unittest
+    unittest.main('idlelib.idle_test.test_help_about', verbosity=2, exit=False)
     from idlelib.idle_test.htest import run
     run(AboutDialog)

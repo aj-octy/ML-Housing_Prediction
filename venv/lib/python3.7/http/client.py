@@ -140,20 +140,6 @@ _MAXHEADERS = 100
 _is_legal_header_name = re.compile(rb'[^:\s][^:\r\n]*').fullmatch
 _is_illegal_header_value = re.compile(rb'\n(?![ \t])|\r(?![ \t\n])').search
 
-# These characters are not allowed within HTTP URL paths.
-#  See https://tools.ietf.org/html/rfc3986#section-3.3 and the
-#  https://tools.ietf.org/html/rfc3986#appendix-A pchar definition.
-# Prevents CVE-2019-9740.  Includes control characters such as \r\n.
-# We don't restrict chars above \x7f as putrequest() limits us to ASCII.
-_contains_disallowed_url_pchar_re = re.compile('[\x00-\x20\x7f]')
-# Arguably only these _should_ allowed:
-#  _is_allowed_url_pchars_re = re.compile(r"^[/!$&'()*+,;=:@%a-zA-Z0-9._~-]+$")
-# We are more lenient for assumed real world compatibility purposes.
-
-# These characters are not allowed within HTTP method names
-# to prevent http header injection.
-_contains_disallowed_method_pchar_re = re.compile('[\x00-\x1f]')
-
 # We always set the Content-Length header for these methods because some
 # servers will otherwise respond with a 411
 _METHODS_EXPECTING_BODY = {'PATCH', 'POST', 'PUT'}
@@ -204,11 +190,15 @@ class HTTPMessage(email.message.Message):
                 lst.append(line)
         return lst
 
-def _read_headers(fp):
-    """Reads potential header lines into a list from a file pointer.
+def parse_headers(fp, _class=HTTPMessage):
+    """Parses only RFC2822 headers from a file pointer.
 
-    Length of line is limited by _MAXLINE, and number of
-    headers is limited by _MAXHEADERS.
+    email Parser wants to see strings rather than bytes.
+    But a TextIOWrapper around self.rfile would buffer too many bytes
+    from the stream, bytes which we later need to read as bytes.
+    So we read the correct bytes here, as bytes, for email Parser
+    to parse.
+
     """
     headers = []
     while True:
@@ -220,19 +210,6 @@ def _read_headers(fp):
             raise HTTPException("got more than %d headers" % _MAXHEADERS)
         if line in (b'\r\n', b'\n', b''):
             break
-    return headers
-
-def parse_headers(fp, _class=HTTPMessage):
-    """Parses only RFC2822 headers from a file pointer.
-
-    email Parser wants to see strings rather than bytes.
-    But a TextIOWrapper around self.rfile would buffer too many bytes
-    from the stream, bytes which we later need to read as bytes.
-    So we read the correct bytes here, as bytes, for email Parser
-    to parse.
-
-    """
-    headers = _read_headers(fp)
     hstring = b''.join(headers).decode('iso-8859-1')
     return email.parser.Parser(_class=_class).parsestr(hstring)
 
@@ -320,10 +297,15 @@ class HTTPResponse(io.BufferedIOBase):
             if status != CONTINUE:
                 break
             # skip the header from the 100 response
-            skipped_headers = _read_headers(self.fp)
-            if self.debuglevel > 0:
-                print("headers:", skipped_headers)
-            del skipped_headers
+            while True:
+                skip = self.fp.readline(_MAXLINE + 1)
+                if len(skip) > _MAXLINE:
+                    raise LineTooLong("header line")
+                skip = skip.strip()
+                if not skip:
+                    break
+                if self.debuglevel > 0:
+                    print("header:", skip)
 
         self.code = self.status = status
         self.reason = reason.strip()
@@ -338,8 +320,8 @@ class HTTPResponse(io.BufferedIOBase):
         self.headers = self.msg = parse_headers(self.fp)
 
         if self.debuglevel > 0:
-            for hdr, val in self.headers.items():
-                print("header:", hdr + ":", val)
+            for hdr in self.headers:
+                print("header:", hdr, end=" ")
 
         # are we using the chunked-style of transfer encoding?
         tr_enc = self.headers.get("transfer-encoding")
@@ -858,8 +840,6 @@ class HTTPConnection:
 
         (self.host, self.port) = self._get_hostport(host, port)
 
-        self._validate_host(self.host)
-
         # This is stored as an instance variable to allow unit
         # tests to replace it with a suitable mockup
         self._create_connection = socket.create_connection
@@ -1117,17 +1097,14 @@ class HTTPConnection:
         else:
             raise CannotSendRequest(self.__state)
 
-        self._validate_method(method)
-
-        # Save the method for use later in the response phase
+        # Save the method we use, we need it later in the response phase
         self._method = method
-
-        url = url or '/'
-        self._validate_path(url)
-
+        if not url:
+            url = '/'
         request = '%s %s %s' % (method, url, self._http_vsn_str)
 
-        self._output(self._encode_request(request))
+        # Non-ASCII characters should have been eliminated earlier
+        self._output(request.encode('ascii'))
 
         if self._http_vsn == 11:
             # Issue some standard headers for better HTTP/1.1 compliance
@@ -1204,35 +1181,6 @@ class HTTPConnection:
         else:
             # For HTTP/1.0, the server will assume "not chunked"
             pass
-
-    def _encode_request(self, request):
-        # ASCII also helps prevent CVE-2019-9740.
-        return request.encode('ascii')
-
-    def _validate_method(self, method):
-        """Validate a method name for putrequest."""
-        # prevent http header injection
-        match = _contains_disallowed_method_pchar_re.search(method)
-        if match:
-            raise ValueError(
-                    f"method can't contain control characters. {method!r} "
-                    f"(found at least {match.group()!r})")
-
-    def _validate_path(self, url):
-        """Validate a url for putrequest."""
-        # Prevent CVE-2019-9740.
-        match = _contains_disallowed_url_pchar_re.search(url)
-        if match:
-            raise InvalidURL(f"URL can't contain control characters. {url!r} "
-                             f"(found at least {match.group()!r})")
-
-    def _validate_host(self, host):
-        """Validate a host so it doesn't contain control characters."""
-        # Prevent CVE-2019-18348.
-        match = _contains_disallowed_url_pchar_re.search(host)
-        if match:
-            raise InvalidURL(f"URL can't contain control characters. {host!r} "
-                             f"(found at least {match.group()!r})")
 
     def putheader(self, header, *values):
         """Send a request header line to the server.
@@ -1418,9 +1366,6 @@ else:
             self.cert_file = cert_file
             if context is None:
                 context = ssl._create_default_https_context()
-                # enable PHA for TLS 1.3 connections if available
-                if context.post_handshake_auth is not None:
-                    context.post_handshake_auth = True
             will_verify = context.verify_mode != ssl.CERT_NONE
             if check_hostname is None:
                 check_hostname = context.check_hostname
@@ -1429,10 +1374,6 @@ else:
                                  "either CERT_OPTIONAL or CERT_REQUIRED")
             if key_file or cert_file:
                 context.load_cert_chain(cert_file, key_file)
-                # cert and key file means the user wants to authenticate.
-                # enable TLS 1.3 PHA implicitly even for custom contexts.
-                if context.post_handshake_auth is not None:
-                    context.post_handshake_auth = True
             self._context = context
             if check_hostname is not None:
                 self._context.check_hostname = check_hostname

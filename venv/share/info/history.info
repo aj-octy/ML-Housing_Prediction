@@ -1,11 +1,11 @@
-This is history.info, produced by makeinfo version 6.8 from
+This is history.info, produced by makeinfo version 6.1 from
 history.texi.
 
-This document describes the GNU History library (version 8.2, 19
-September 2022), a programming tool that provides a consistent user
-interface for recalling lines of previously typed input.
+This document describes the GNU History library (version 7.0, 16 July
+2016), a programming tool that provides a consistent user interface for
+recalling lines of previously typed input.
 
-   Copyright (C) 1988-2022 Free Software Foundation, Inc.
+   Copyright (C) 1988-2016 Free Software Foundation, Inc.
 
      Permission is granted to copy, distribute and/or modify this
      document under the terms of the GNU Free Documentation License,
@@ -79,14 +79,6 @@ Bash does, so that several words surrounded by quotes are considered one
 word.  History expansions are introduced by the appearance of the
 history expansion character, which is '!' by default.
 
-   History expansion implements shell-like quoting conventions: a
-backslash can be used to remove the special handling for the next
-character; single quotes enclose verbatim sequences of characters, and
-can be used to inhibit history expansion; and characters enclosed within
-double quotes may be subject to history expansion, since backslash can
-escape the history expansion character, but single quotes may not, since
-they are not treated specially within double quotes.
-
 * Menu:
 
 * Event Designators::	How to specify which history line to use.
@@ -123,13 +115,11 @@ the current position in the history list.
 '!?STRING[?]'
      Refer to the most recent command preceding the current position in
      the history list containing STRING.  The trailing '?' may be
-     omitted if the STRING is followed immediately by a newline.  If
-     STRING is missing, the string from the most recent search is used;
-     it is an error if there is no previous search string.
+     omitted if the STRING is followed immediately by a newline.
 
 '^STRING1^STRING2^'
      Quick Substitution.  Repeat the last command, replacing STRING1
-     with STRING2.  Equivalent to '!!:s^STRING1^STRING2^'.
+     with STRING2.  Equivalent to '!!:s/STRING1/STRING2/'.
 
 '!#'
      The entire command line typed so far.
@@ -176,8 +166,7 @@ separated by single spaces.
      The last argument.
 
 '%'
-     The first word matched by the most recent '?STRING?' search, if the
-     search string begins with a character that is part of a word.
+     The word matched by the most recent '?STRING?' search.
 
 'X-Y'
      A range of words; '-Y' abbreviates '0-Y'.
@@ -191,8 +180,7 @@ separated by single spaces.
      Abbreviates 'X-$'
 
 'X-'
-     Abbreviates 'X-$' like 'X*', but omits the last word.  If 'x' is
-     missing, it defaults to 0.
+     Abbreviates 'X-$' like 'X*', but omits the last word.
 
    If a word designator is supplied without an event specification, the
 previous command is used as the event.
@@ -204,8 +192,7 @@ File: history.info,  Node: Modifiers,  Prev: Word Designators,  Up: History Inte
 ---------------
 
 After the optional word designator, you can add a sequence of one or
-more of the following modifiers, each preceded by a ':'.  These modify,
-or edit, the word or words selected from the history event.
+more of the following modifiers, each preceded by a ':'.
 
 'h'
      Remove a trailing pathname component, leaving only the head.
@@ -225,14 +212,11 @@ or edit, the word or words selected from the history event.
 
 's/OLD/NEW/'
      Substitute NEW for the first occurrence of OLD in the event line.
-     Any character may be used as the delimiter in place of '/'.  The
-     delimiter may be quoted in OLD and NEW with a single backslash.  If
-     '&' appears in NEW, it is replaced by OLD.  A single backslash will
-     quote the '&'.  If OLD is null, it is set to the last OLD
-     substituted, or, if no previous history substitutions took place,
-     the last STRING in a !?STRING'[?]' search.  If NEW is null, each
-     matching OLD is deleted.  The final delimiter is optional if it is
-     the last character on the input line.
+     Any delimiter may be used in place of '/'.  The delimiter may be
+     quoted in OLD and NEW with a single backslash.  If '&' appears in
+     NEW, it is replaced by OLD.  A single backslash will quote the '&'.
+     The final delimiter is optional if it is the last character on the
+     input line.
 
 '&'
      Repeat the previous substitution.
@@ -243,8 +227,7 @@ or edit, the word or words selected from the history event.
      conjunction with 's', as in 'gs/OLD/NEW/', or with '&'.
 
 'G'
-     Apply the following 's' or '&' modifier once to each word in the
-     event.
+     Apply the following 's' modifier once to each word in the event.
 
 
 File: history.info,  Node: Programming with GNU History,  Next: GNU Free Documentation License,  Prev: Using History Interactively,  Up: Top
@@ -276,7 +259,7 @@ History library is able to keep track of those lines, associate
 arbitrary data with each line, and utilize information from previous
 lines in composing new ones.
 
-   A programmer using the History library has available functions for
+   The programmer using the History library has available functions for
 remembering lines on a history list, associating arbitrary data with a
 line, removing lines from the list, searching through the list for a
 line containing an arbitrary text string, and referencing any line in
@@ -290,9 +273,9 @@ for manipulating the text of previous lines and using that text in new
 commands.  The basic history manipulation commands are similar to the
 history substitution provided by 'csh'.
 
-   The programmer can also use the Readline library, which includes some
-history manipulation by default, and has the added advantage of command
-line editing.
+   If the programmer desires, he can use the Readline library, which
+includes some history manipulation by default, and has the added
+advantage of command line editing.
 
    Before declaring any functions using any functionality the History
 library provides in other code, an application writer should include the
@@ -398,10 +381,7 @@ parameters managing the list itself.
 
  -- Function: void add_history (const char *string)
      Place STRING at the end of the history list.  The associated data
-     field (if any) is set to 'NULL'.  If the maximum number of history
-     entries has been set using 'stifle_history()', and the new number
-     of history entries would exceed that maximum, the oldest history
-     entry is removed.
+     field (if any) is set to 'NULL'.
 
  -- Function: void add_history_time (const char *string)
      Change the time stamp associated with the most recent history entry
@@ -429,7 +409,6 @@ parameters managing the list itself.
 
  -- Function: void stifle_history (int max)
      Stifle the history list, remembering only the last MAX entries.
-     The history list will contain only MAX entries at a time.
 
  -- Function: int unstifle_history (void)
      Stop stifling the history.  This returns the previously-set maximum
@@ -463,10 +442,9 @@ individual list entries.
      pointer.
 
  -- Function: HIST_ENTRY * history_get (int offset)
-     Return the history entry at position OFFSET.  The range of valid
-     values of OFFSET starts at 'history_base' and ends at
-     HISTORY_LENGTH - 1 (*note History Variables::).  If there is no
-     entry there, or if OFFSET is outside the valid range, return a
+     Return the history entry at position OFFSET, starting from
+     'history_base' (*note History Variables::).  If there is no entry
+     there, or if OFFSET is greater than the history length, return a
      'NULL' pointer.
 
  -- Function: time_t history_get_time (HIST_ENTRY *entry)
@@ -619,7 +597,7 @@ These functions implement history expansion.
      Return an array of tokens parsed out of STRING, much as the shell
      might.  The tokens are split on the characters in the
      HISTORY_WORD_DELIMITERS variable, and shell quoting conventions are
-     obeyed as described below.
+     obeyed.
 
  -- Function: char * history_arg_extract (int first, int last, const
           char *string)
@@ -685,24 +663,9 @@ GNU History Library.
      space, tab, newline, carriage return, and '='.
 
  -- Variable: int history_quotes_inhibit_expansion
-     If non-zero, the history expansion code implements shell-like
-     quoting: single-quoted words are not scanned for the history
-     expansion character or the history comment character, and
-     double-quoted words may have history expansion performed, since
-     single quotes are not special within double quotes.  The default
+     If non-zero, double-quoted words are not scanned for the history
+     expansion character or the history comment character.  The default
      value is 0.
-
- -- Variable: int history_quoting_state
-     An application may set this variable to indicate that the current
-     line being expanded is subject to existing quoting.  If set to ''',
-     the history expansion function will assume that the line is
-     single-quoted and inhibit expansion until it reads an unquoted
-     closing single quote; if set to '"', history expansion will assume
-     the line is double quoted until it reads an unquoted closing double
-     quote.  If set to zero, the default, the history expansion function
-     will assume the line is not quoted and treat quote characters
-     within the line as described above.  This is only effective if
-     HISTORY_QUOTES_INHIBIT_EXPANSION is set.
 
  -- Variable: rl_linebuf_func_t * history_inhibit_expansion_function
      This should be set to the address of a function that takes two
@@ -1319,15 +1282,15 @@ Appendix C Function and Variable Index
 * add_history:                           History List Management.
                                                                (line  9)
 * add_history_time:                      History List Management.
-                                                               (line 16)
+                                                               (line 13)
 * append_history:                        Managing the History File.
                                                                (line 28)
 * clear_history:                         History List Management.
-                                                               (line 37)
+                                                               (line 34)
 * current_history:                       Information About the History List.
                                                                (line 17)
 * free_history_entry:                    History List Management.
-                                                               (line 25)
+                                                               (line 22)
 * get_history_event:                     History Expansion.    (line 26)
 * history_arg_extract:                   History Expansion.    (line 41)
 * history_base:                          History Variables.    (line  9)
@@ -1339,17 +1302,16 @@ Appendix C Function and Variable Index
 * history_get_history_state:             Initializing History and State Management.
                                                                (line 14)
 * history_get_time:                      Information About the History List.
-                                                               (line 29)
-* history_inhibit_expansion_function:    History Variables.    (line 77)
+                                                               (line 28)
+* history_inhibit_expansion_function:    History Variables.    (line 62)
 * history_is_stifled:                    History List Management.
-                                                               (line 50)
+                                                               (line 46)
 * history_length:                        History Variables.    (line 12)
 * history_list:                          Information About the History List.
                                                                (line  9)
 * history_max_entries:                   History Variables.    (line 15)
 * history_no_expand_chars:               History Variables.    (line 52)
 * history_quotes_inhibit_expansion:      History Variables.    (line 57)
-* history_quoting_state:                 History Variables.    (line 65)
 * history_search:                        Searching the History List.
                                                                (line 12)
 * history_search_delimiter_chars:        History Variables.    (line 47)
@@ -1364,7 +1326,7 @@ Appendix C Function and Variable Index
 * history_subst_char:                    History Variables.    (line 33)
 * history_tokenize:                      History Expansion.    (line 35)
 * history_total_bytes:                   Information About the History List.
-                                                               (line 33)
+                                                               (line 32)
 * history_truncate_file:                 Managing the History File.
                                                                (line 33)
 * history_word_delimiters:               History Variables.    (line 43)
@@ -1378,13 +1340,13 @@ Appendix C Function and Variable Index
 * read_history_range:                    Managing the History File.
                                                                (line 14)
 * remove_history:                        History List Management.
-                                                               (line 20)
+                                                               (line 17)
 * replace_history_entry:                 History List Management.
-                                                               (line 30)
+                                                               (line 27)
 * stifle_history:                        History List Management.
-                                                               (line 40)
+                                                               (line 37)
 * unstifle_history:                      History List Management.
-                                                               (line 44)
+                                                               (line 40)
 * using_history:                         Initializing History and State Management.
                                                                (line 10)
 * where_history:                         Information About the History List.
@@ -1395,32 +1357,27 @@ Appendix C Function and Variable Index
 
 
 Tag Table:
-Node: Top850
-Node: Using History Interactively1495
-Node: History Interaction2003
-Node: Event Designators3901
-Node: Word Designators5175
-Node: Modifiers6935
-Node: Programming with GNU History8477
-Node: Introduction to History9221
-Node: History Storage10899
-Node: History Functions12034
-Node: Initializing History and State Management13023
-Node: History List Management13835
-Node: Information About the History List16129
-Node: Moving Around the History List17743
-Node: Searching the History List18836
-Node: Managing the History File20761
-Node: History Expansion22581
-Node: History Variables24510
-Node: History Programming Example28490
-Node: GNU Free Documentation License31167
-Node: Concept Index56339
-Node: Function and Variable Index57044
+Node: Top845
+Node: Using History Interactively1490
+Node: History Interaction1998
+Node: Event Designators3422
+Node: Word Designators4561
+Node: Modifiers6198
+Node: Programming with GNU History7421
+Node: Introduction to History8165
+Node: History Storage9855
+Node: History Functions10990
+Node: Initializing History and State Management11979
+Node: History List Management12791
+Node: Information About the History List14824
+Node: Moving Around the History List16377
+Node: Searching the History List17470
+Node: Managing the History File19395
+Node: History Expansion21215
+Node: History Variables23125
+Node: History Programming Example26195
+Node: GNU Free Documentation License28872
+Node: Concept Index54044
+Node: Function and Variable Index54749
 
 End Tag Table
-
-
-Local Variables:
-coding: utf-8
-End:

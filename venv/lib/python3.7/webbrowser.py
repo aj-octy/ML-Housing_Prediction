@@ -69,14 +69,6 @@ def get(using=None):
 # instead of "from webbrowser import *".
 
 def open(url, new=0, autoraise=True):
-    """Display url using the default browser.
-
-    If possible, open url in a location determined by new.
-    - 0: the same browser window (the default).
-    - 1: a new browser window.
-    - 2: a new browser page ("tab").
-    If possible, autoraise raises the window (the default) or not.
-    """
     if _tryorder is None:
         with _lock:
             if _tryorder is None:
@@ -88,22 +80,14 @@ def open(url, new=0, autoraise=True):
     return False
 
 def open_new(url):
-    """Open url in a new window of the default browser.
-
-    If not possible, then open url in the only browser window.
-    """
     return open(url, 1)
 
 def open_new_tab(url):
-    """Open url in a new page ("tab") of the default browser.
-
-    If not possible, then the behavior becomes equivalent to open_new().
-    """
     return open(url, 2)
 
 
-def _synthesize(browser, *, preferred=False):
-    """Attempt to synthesize a controller based on existing controllers.
+def _synthesize(browser, update_tryorder=1):
+    """Attempt to synthesize a controller base on existing controllers.
 
     This is useful to create a controller when a user specifies a path to
     an entry in the BROWSER environment variable -- we can copy a general
@@ -129,7 +113,7 @@ def _synthesize(browser, *, preferred=False):
         controller = copy.copy(controller)
         controller.name = browser
         controller.basename = os.path.basename(browser)
-        register(browser, None, instance=controller, preferred=preferred)
+        register(browser, None, controller, update_tryorder)
         return [None, controller]
     return [None, None]
 
@@ -324,10 +308,11 @@ Chromium = Chrome
 class Opera(UnixBrowser):
     "Launcher class for Opera browser."
 
-    remote_args = ['%action', '%s']
+    raise_opts = ["-noraise", ""]
+    remote_args = ['-remote', 'openURL(%s%action)']
     remote_action = ""
-    remote_action_newwin = "--new-window"
-    remote_action_newtab = ""
+    remote_action_newwin = ",new-window"
+    remote_action_newtab = ",new-page"
     background = True
 
 
@@ -540,7 +525,7 @@ def register_standard_browsers():
                 register(browser, None, BackgroundBrowser(browser))
     else:
         # Prefer X browsers if present
-        if os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"):
+        if os.environ.get("DISPLAY"):
             try:
                 cmd = "xdg-settings get default-web-browser".split()
                 raw_result = subprocess.check_output(cmd, stderr=subprocess.DEVNULL)
@@ -579,7 +564,7 @@ def register_standard_browsers():
         # and prepend to _tryorder
         for cmdline in userchoices:
             if cmdline != '':
-                cmd = _synthesize(cmdline, preferred=True)
+                cmd = _synthesize(cmdline, -1)
                 if cmd[1] is None:
                     register(cmdline, None, GenericBrowser(cmdline), preferred=True)
 

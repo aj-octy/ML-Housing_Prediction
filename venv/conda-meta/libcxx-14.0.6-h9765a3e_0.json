@@ -4399,7 +4399,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "libcxx",
+  "requested_spec": "None",
   "sha256": "fea96b4bfab987a746ef553f88ea202cf13464c43ee8ae9868c754126f4ab005",
   "size": 990864,
   "subdir": "osx-64",

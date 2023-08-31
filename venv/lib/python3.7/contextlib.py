@@ -186,7 +186,7 @@ class _AsyncGeneratorContextManager(_GeneratorContextManagerBase,
             # in this implementation
             try:
                 await self.gen.athrow(typ, value, traceback)
-                raise RuntimeError("generator didn't stop after athrow()")
+                raise RuntimeError("generator didn't stop after throw()")
             except StopAsyncIteration as exc:
                 return exc is not value
             except RuntimeError as exc:
@@ -378,8 +378,7 @@ class _BaseExitStack:
         return _exit_wrapper
 
     @staticmethod
-    def _create_cb_wrapper(*args, **kwds):
-        callback, *args = args
+    def _create_cb_wrapper(callback, *args, **kwds):
         def _exit_wrapper(exc_type, exc, tb):
             callback(*args, **kwds)
         return _exit_wrapper
@@ -428,23 +427,11 @@ class _BaseExitStack:
         self._push_cm_exit(cm, _exit)
         return result
 
-    def callback(*args, **kwds):
+    def callback(self, callback, *args, **kwds):
         """Registers an arbitrary callback and arguments.
 
         Cannot suppress exceptions.
         """
-        if len(args) >= 2:
-            self, callback, *args = args
-        elif not args:
-            raise TypeError("descriptor 'callback' of '_BaseExitStack' object "
-                            "needs an argument")
-        elif 'callback' in kwds:
-            callback = kwds.pop('callback')
-            self, *args = args
-        else:
-            raise TypeError('callback expected at least 1 positional argument, '
-                            'got %d' % (len(args)-1))
-
         _exit_wrapper = self._create_cb_wrapper(callback, *args, **kwds)
 
         # We changed the signature, so using @wraps is not appropriate, but
@@ -553,8 +540,7 @@ class AsyncExitStack(_BaseExitStack, AbstractAsyncContextManager):
         return _exit_wrapper
 
     @staticmethod
-    def _create_async_cb_wrapper(*args, **kwds):
-        callback, *args = args
+    def _create_async_cb_wrapper(callback, *args, **kwds):
         async def _exit_wrapper(exc_type, exc, tb):
             await callback(*args, **kwds)
         return _exit_wrapper
@@ -589,23 +575,11 @@ class AsyncExitStack(_BaseExitStack, AbstractAsyncContextManager):
             self._push_async_cm_exit(exit, exit_method)
         return exit  # Allow use as a decorator
 
-    def push_async_callback(*args, **kwds):
+    def push_async_callback(self, callback, *args, **kwds):
         """Registers an arbitrary coroutine function and arguments.
 
         Cannot suppress exceptions.
         """
-        if len(args) >= 2:
-            self, callback, *args = args
-        elif not args:
-            raise TypeError("descriptor 'push_async_callback' of "
-                            "'AsyncExitStack' object needs an argument")
-        elif 'callback' in kwds:
-            callback = kwds.pop('callback')
-            self, *args = args
-        else:
-            raise TypeError('push_async_callback expected at least 1 '
-                            'positional argument, got %d' % (len(args)-1))
-
         _exit_wrapper = self._create_async_cb_wrapper(callback, *args, **kwds)
 
         # We changed the signature, so using @wraps is not appropriate, but

@@ -287,15 +287,16 @@ class IOBase(metaclass=abc.ABCMeta):
     derived classes can override selectively; the default implementations
     represent a file that cannot be read, written or seeked.
 
-    Even though IOBase does not declare read or write because
+    Even though IOBase does not declare read, readinto, or write because
     their signatures will vary, implementations and clients should
     consider those methods part of the interface. Also, implementations
     may raise UnsupportedOperation when operations they do not support are
     called.
 
     The basic type used for binary data read from or written to a file is
-    bytes. Other bytes-like objects are accepted as method arguments too.
-    Text I/O classes work with str data.
+    bytes. Other bytes-like objects are accepted as method arguments too. In
+    some cases (such as readinto), a writable object is required. Text I/O
+    classes work with str data.
 
     Note that calling any method (even inquiries) on a closed stream is
     undefined. Implementations may raise OSError in this case.
@@ -546,11 +547,6 @@ class IOBase(metaclass=abc.ABCMeta):
         return lines
 
     def writelines(self, lines):
-        """Write a list of lines to the stream.
-
-        Line separators are not added, so it is usual for each of the lines
-        provided to have a line separator at the end.
-        """
         self._checkClosed()
         for line in lines:
             self.write(line)
@@ -839,10 +835,6 @@ class BytesIO(BufferedIOBase):
 
     """Buffered I/O implementation using an in-memory bytes buffer."""
 
-    # Initialize _buffer as soon as possible since it's used by __del__()
-    # which calls close()
-    _buffer = None
-
     def __init__(self, initial_bytes=None):
         buf = bytearray()
         if initial_bytes is not None:
@@ -870,8 +862,7 @@ class BytesIO(BufferedIOBase):
         return memoryview(self._buffer)
 
     def close(self):
-        if self._buffer is not None:
-            self._buffer.clear()
+        self._buffer.clear()
         super().close()
 
     def read(self, size=-1):
@@ -1543,11 +1534,7 @@ class FileIO(RawIOBase):
                 # For consistent behaviour, we explicitly seek to the
                 # end of file (otherwise, it might be done only on the
                 # first write()).
-                try:
-                    os.lseek(fd, 0, SEEK_END)
-                except OSError as e:
-                    if e.errno != errno.ESPIPE:
-                        raise
+                os.lseek(fd, 0, SEEK_END)
         except:
             if owned_fd is not None:
                 os.close(owned_fd)
@@ -1772,7 +1759,8 @@ class TextIOBase(IOBase):
     """Base class for text I/O.
 
     This class provides a character and line based interface to stream
-    I/O. There is no public constructor.
+    I/O. There is no readinto method because Python's character strings
+    are immutable. There is no public constructor.
     """
 
     def read(self, size=-1):
@@ -1944,10 +1932,6 @@ class TextIOWrapper(TextIOBase):
     """
 
     _CHUNK_SIZE = 2048
-
-    # Initialize _buffer as soon as possible since it's used by __del__()
-    # which calls close()
-    _buffer = None
 
     # The write_through argument has no effect here since this
     # implementation always writes through.  The argument is present only
@@ -2165,7 +2149,6 @@ class TextIOWrapper(TextIOBase):
         self.buffer.write(b)
         if self._line_buffering and (haslf or "\r" in s):
             self.flush()
-        self._set_decoded_chars('')
         self._snapshot = None
         if self._decoder:
             self._decoder.reset()

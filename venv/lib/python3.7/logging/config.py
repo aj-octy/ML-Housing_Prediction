@@ -1,4 +1,4 @@
-# Copyright 2001-2019 by Vinay Sajip. All Rights Reserved.
+# Copyright 2001-2016 by Vinay Sajip. All Rights Reserved.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose and without fee is hereby granted,
@@ -19,7 +19,7 @@ Configuration functions for the logging package for Python. The core package
 is based on PEP 282 and comments thereto in comp.lang.python, and influenced
 by Apache's log4j system.
 
-Copyright (C) 2001-2019 Vinay Sajip. All Rights Reserved.
+Copyright (C) 2001-2016 Vinay Sajip. All Rights Reserved.
 
 To use, simply 'import logging' and log away!
 """
@@ -73,8 +73,8 @@ def fileConfig(fname, defaults=None, disable_existing_loggers=True):
     # critical section
     logging._acquireLock()
     try:
-        _clearExistingHandlers()
-
+        logging._handlers.clear()
+        del logging._handlerList[:]
         # Handlers add themselves to logging._handlers
         handlers = _install_handlers(cp, formatters)
         _install_loggers(cp, handlers, disable_existing_loggers)
@@ -173,10 +173,9 @@ def _handle_existing_loggers(existing, child_loggers, disable_existing):
     for log in existing:
         logger = root.manager.loggerDict[log]
         if log in child_loggers:
-            if not isinstance(logger, logging.PlaceHolder):
-                logger.setLevel(logging.NOTSET)
-                logger.handlers = []
-                logger.propagate = True
+            logger.level = logging.NOTSET
+            logger.handlers = []
+            logger.propagate = True
         else:
             logger.disabled = disable_existing
 
@@ -265,14 +264,6 @@ def _install_loggers(cp, handlers, disable_existing):
     #    elif disable_existing_loggers:
     #        logger.disabled = 1
     _handle_existing_loggers(existing, child_loggers, disable_existing)
-
-
-def _clearExistingHandlers():
-    """Clear and close existing handlers"""
-    logging._handlers.clear()
-    logging.shutdown(logging._handlerList[:])
-    del logging._handlerList[:]
-
 
 IDENTIFIER = re.compile('^[a-z_][a-z0-9_]*$', re.I)
 
@@ -447,7 +438,7 @@ class BaseConfigurator(object):
             value = ConvertingList(value)
             value.configurator = self
         elif not isinstance(value, ConvertingTuple) and\
-                 isinstance(value, tuple) and not hasattr(value, '_fields'):
+                 isinstance(value, tuple):
             value = ConvertingTuple(value)
             value.configurator = self
         elif isinstance(value, str): # str for py3k
@@ -533,7 +524,8 @@ class DictConfigurator(BaseConfigurator):
             else:
                 disable_existing = config.pop('disable_existing_loggers', True)
 
-                _clearExistingHandlers()
+                logging._handlers.clear()
+                del logging._handlerList[:]
 
                 # Do formatters first - they don't refer to anything else
                 formatters = config.get('formatters', EMPTY_DICT)

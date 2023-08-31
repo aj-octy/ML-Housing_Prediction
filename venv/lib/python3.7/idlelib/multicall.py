@@ -441,8 +441,5 @@ def _multi_call(parent):  # htest #
     bindseq("<Leave>")
 
 if __name__ == "__main__":
-    from unittest import main
-    main('idlelib.idle_test.test_mainmenu', verbosity=2, exit=False)
-
     from idlelib.idle_test.htest import run
     run(_multi_call)

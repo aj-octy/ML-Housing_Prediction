@@ -18,8 +18,6 @@ import tkinter.messagebox as tkMessageBox
 from idlelib.config import idleConf
 from idlelib import macosx
 from idlelib import pyshell
-from idlelib.query import CustomRun
-from idlelib import outwin
 
 indent_message = """Error: Inconsistent indentation detected!
 
@@ -40,16 +38,11 @@ class ScriptBinding:
         # XXX This should be done differently
         self.flist = self.editwin.flist
         self.root = self.editwin.root
-        # cli_args is list of strings that extends sys.argv
-        self.cli_args = []
 
         if macosx.isCocoaTk():
             self.editwin.text_frame.bind('<<run-module-event-2>>', self._run_module_event)
 
     def check_module_event(self, event):
-        if isinstance(self.editwin, outwin.OutputWindow):
-            self.editwin.text.bell()
-            return 'break'
         filename = self.getfilename()
         if not filename:
             return 'break'
@@ -115,27 +108,20 @@ class ScriptBinding:
             # tries to run a module using the keyboard shortcut
             # (the menu item works fine).
             self.editwin.text_frame.after(200,
-                lambda: self.editwin.text_frame.event_generate(
-                        '<<run-module-event-2>>'))
+                lambda: self.editwin.text_frame.event_generate('<<run-module-event-2>>'))
             return 'break'
         else:
             return self._run_module_event(event)
 
-    def run_custom_event(self, event):
-        return self._run_module_event(event, customize=True)
-
-    def _run_module_event(self, event, *, customize=False):
+    def _run_module_event(self, event):
         """Run the module after setting up the environment.
 
-        First check the syntax.  Next get customization.  If OK, make
-        sure the shell is active and then transfer the arguments, set
-        the run environment's working directory to the directory of the
-        module being executed and also add that directory to its
-        sys.path if not already included.
+        First check the syntax.  If OK, make sure the shell is active and
+        then transfer the arguments, set the run environment's working
+        directory to the directory of the module being executed and also
+        add that directory to its sys.path if not already included.
         """
-        if isinstance(self.editwin, outwin.OutputWindow):
-            self.editwin.text.bell()
-            return 'break'
+
         filename = self.getfilename()
         if not filename:
             return 'break'
@@ -144,34 +130,23 @@ class ScriptBinding:
             return 'break'
         if not self.tabnanny(filename):
             return 'break'
-        if customize:
-            title = f"Customize {self.editwin.short_title()} Run"
-            run_args = CustomRun(self.shell.text, title,
-                                 cli_args=self.cli_args).result
-            if not run_args:  # User cancelled.
-                return 'break'
-        self.cli_args, restart = run_args if customize else ([], True)
         interp = self.shell.interp
-        if pyshell.use_subprocess and restart:
-            interp.restart_subprocess(
-                    with_cwd=False, filename=filename)
+        if pyshell.use_subprocess:
+            interp.restart_subprocess(with_cwd=False, filename=
+                        self.editwin._filename_to_unicode(filename))
         dirname = os.path.dirname(filename)
-        argv = [filename]
-        if self.cli_args:
-            argv += self.cli_args
-        interp.runcommand(f"""if 1:
+        # XXX Too often this discards arguments the user just set...
+        interp.runcommand("""if 1:
             __file__ = {filename!r}
             import sys as _sys
             from os.path import basename as _basename
-            argv = {argv!r}
             if (not _sys.argv or
-                _basename(_sys.argv[0]) != _basename(__file__) or
-                len(argv) > 1):
-                _sys.argv = argv
+                _basename(_sys.argv[0]) != _basename(__file__)):
+                _sys.argv = [__file__]
             import os as _os
             _os.chdir({dirname!r})
-            del _sys, argv, _basename, _os
-            \n""")
+            del _sys, _basename, _os
+            \n""".format(filename=filename, dirname=dirname))
         interp.prepend_syspath(filename)
         # XXX KBK 03Jul04 When run w/o subprocess, runtime warnings still
         #         go to __stderr__.  With subprocess, they go to the shell.
@@ -218,8 +193,3 @@ class ScriptBinding:
         # XXX This should really be a function of EditorWindow...
         tkMessageBox.showerror(title, message, parent=self.editwin.text)
         self.editwin.text.focus_set()
-
-
-if __name__ == "__main__":
-    from unittest import main
-    main('idlelib.idle_test.test_runscript', verbosity=2,)

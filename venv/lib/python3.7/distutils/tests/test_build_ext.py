@@ -177,12 +177,10 @@ class BuildExtTestCase(TempdirManager,
         cmd.finalize_options()
 
         py_include = sysconfig.get_python_inc()
-        for p in py_include.split(os.path.pathsep):
-            self.assertIn(p, cmd.include_dirs)
+        self.assertIn(py_include, cmd.include_dirs)
 
         plat_py_include = sysconfig.get_python_inc(plat_specific=1)
-        for p in plat_py_include.split(os.path.pathsep):
-            self.assertIn(p, cmd.include_dirs)
+        self.assertIn(plat_py_include, cmd.include_dirs)
 
         # make sure cmd.libraries is turned into a list
         # if it's a string
@@ -470,7 +468,7 @@ class BuildExtTestCase(TempdirManager,
         # format the target value as defined in the Apple
         # Availability Macros.  We can't use the macro names since
         # at least one value we test with will not exist yet.
-        if target[:2] < (10, 10):
+        if target[1] < 10:
             # for 10.1 through 10.9.x -> "10n0"
             target = '%02d%01d0' % target
         else:

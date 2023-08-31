@@ -179,9 +179,7 @@ class RobotFileParser:
         for entry in self.entries:
             if entry.applies_to(useragent):
                 return entry.delay
-        if self.default_entry:
-            return self.default_entry.delay
-        return None
+        return self.default_entry.delay
 
     def request_rate(self, useragent):
         if not self.mtime():
@@ -189,9 +187,7 @@ class RobotFileParser:
         for entry in self.entries:
             if entry.applies_to(useragent):
                 return entry.req_rate
-        if self.default_entry:
-            return self.default_entry.req_rate
-        return None
+        return self.default_entry.req_rate
 
     def __str__(self):
         entries = self.entries

@@ -74,7 +74,7 @@ class Bdb:
             return: A function or other code block is about to return.
             exception: An exception has occurred.
             c_call: A C function is about to be called.
-            c_return: A C function has returned.
+            c_return: A C functon has returned.
             c_exception: A C function has raised an exception.
 
         For the Python events, specialized functions (see the dispatch_*()
@@ -546,7 +546,14 @@ class Bdb:
             s += frame.f_code.co_name
         else:
             s += "<lambda>"
-        s += '()'
+        if '__args__' in frame.f_locals:
+            args = frame.f_locals['__args__']
+        else:
+            args = None
+        if args:
+            s += reprlib.repr(args)
+        else:
+            s += '()'
         if '__return__' in frame.f_locals:
             rv = frame.f_locals['__return__']
             s += '->'
@@ -609,23 +616,11 @@ class Bdb:
 
     # This method is more useful to debug a single function call.
 
-    def runcall(*args, **kwds):
+    def runcall(self, func, *args, **kwds):
         """Debug a single function call.
 
         Return the result of the function call.
         """
-        if len(args) >= 2:
-            self, func, *args = args
-        elif not args:
-            raise TypeError("descriptor 'runcall' of 'Bdb' object "
-                            "needs an argument")
-        elif 'func' in kwds:
-            func = kwds.pop('func')
-            self, *args = args
-        else:
-            raise TypeError('runcall expected at least 1 positional argument, '
-                            'got %d' % (len(args)-1))
-
         self.reset()
         sys.settrace(self.trace_dispatch)
         res = None

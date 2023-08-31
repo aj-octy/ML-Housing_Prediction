@@ -1,9 +1,11 @@
-"Test macosx, coverage 45% on Windows."
+'''Test idlelib.macosx.py.
 
+Coverage: 71% on Windows.
+'''
 from idlelib import macosx
-import unittest
 from test.support import requires
 import tkinter as tk
+import unittest
 import unittest.mock as mock
 from idlelib.filelist import FileList
 

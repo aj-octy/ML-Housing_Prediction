@@ -1,7 +1,7 @@
 """Replace dialog for IDLE. Inherits SearchDialogBase for GUI.
-Uses idlelib.searchengine.SearchEngine for search capability.
+Uses idlelib.SearchEngine for search capability.
 Defines various replace related functions like replace, replace all,
-and replace+find.
+replace+find.
 """
 import re
 
@@ -10,16 +10,9 @@ from tkinter import StringVar, TclError
 from idlelib.searchbase import SearchDialogBase
 from idlelib import searchengine
 
-
 def replace(text):
-    """Create or reuse a singleton ReplaceDialog instance.
-
-    The singleton dialog saves user entries and preferences
-    across instances.
-
-    Args:
-        text: Text widget containing the text to be searched.
-    """
+    """Returns a singleton ReplaceDialog instance.The single dialog
+     saves user entries and preferences across instances."""
     root = text._root()
     engine = searchengine.get(root)
     if not hasattr(engine, "_replacedialog"):
@@ -29,36 +22,16 @@ def replace(text):
 
 
 class ReplaceDialog(SearchDialogBase):
-    "Dialog for finding and replacing a pattern in text."
 
     title = "Replace Dialog"
     icon = "Replace"
 
     def __init__(self, root, engine):
-        """Create search dialog for finding and replacing text.
-
-        Uses SearchDialogBase as the basis for the GUI and a
-        searchengine instance to prepare the search.
-
-        Attributes:
-            replvar: StringVar containing 'Replace with:' value.
-            replent: Entry widget for replvar.  Created in
-                create_entries().
-            ok: Boolean used in searchengine.search_text to indicate
-                whether the search includes the selection.
-        """
-        super().__init__(root, engine)
+        SearchDialogBase.__init__(self, root, engine)
         self.replvar = StringVar(root)
 
     def open(self, text):
-        """Make dialog visible on top of others and ready to use.
-
-        Also, highlight the currently selected text and set the
-        search to include the current selection (self.ok).
-
-        Args:
-            text: Text widget being searched.
-        """
+        """Display the replace dialog"""
         SearchDialogBase.open(self, text)
         try:
             first = text.index("sel.first")
@@ -71,50 +44,37 @@ class ReplaceDialog(SearchDialogBase):
         first = first or text.index("insert")
         last = last or first
         self.show_hit(first, last)
-        self.ok = True
+        self.ok = 1
 
     def create_entries(self):
-        "Create base and additional label and text entry widgets."
+        """Create label and text entry widgets"""
         SearchDialogBase.create_entries(self)
         self.replent = self.make_entry("Replace with:", self.replvar)[0]
 
     def create_command_buttons(self):
-        """Create base and additional command buttons.
-
-        The additional buttons are for Find, Replace,
-        Replace+Find, and Replace All.
-        """
         SearchDialogBase.create_command_buttons(self)
         self.make_button("Find", self.find_it)
         self.make_button("Replace", self.replace_it)
-        self.make_button("Replace+Find", self.default_command, isdef=True)
+        self.make_button("Replace+Find", self.default_command, 1)
         self.make_button("Replace All", self.replace_all)
 
     def find_it(self, event=None):
-        "Handle the Find button."
-        self.do_find(False)
+        self.do_find(0)
 
     def replace_it(self, event=None):
-        """Handle the Replace button.
-
-        If the find is successful, then perform replace.
-        """
         if self.do_find(self.ok):
             self.do_replace()
 
     def default_command(self, event=None):
-        """Handle the Replace+Find button as the default command.
-
-        First performs a replace and then, if the replace was
-        successful, a find next.
-        """
+        "Replace and find next."
         if self.do_find(self.ok):
             if self.do_replace():  # Only find next match if replace succeeded.
                                    # A bad re can cause it to fail.
-                self.do_find(False)
+                self.do_find(0)
 
     def _replace_expand(self, m, repl):
-        "Expand replacement text if regular expression."
+        """ Helper function for expanding a regular expression
+            in the replace field, if needed. """
         if self.engine.isre():
             try:
                 new = m.expand(repl)
@@ -127,15 +87,7 @@ class ReplaceDialog(SearchDialogBase):
         return new
 
     def replace_all(self, event=None):
-        """Handle the Replace All button.
-
-        Search text for occurrences of the Find value and replace
-        each of them.  The 'wrap around' value controls the start
-        point for searching.  If wrap isn't set, then the searching
-        starts at the first occurrence after the current selection;
-        if wrap is set, the replacement starts at the first line.
-        The replacement is always done top-to-bottom in the text.
-        """
+        """Replace all instances of patvar with replvar in text"""
         prog = self.engine.getprog()
         if not prog:
             return
@@ -152,13 +104,12 @@ class ReplaceDialog(SearchDialogBase):
         if self.engine.iswrap():
             line = 1
             col = 0
-        ok = True
+        ok = 1
         first = last = None
         # XXX ought to replace circular instead of top-to-bottom when wrapping
         text.undo_block_start()
-        while True:
-            res = self.engine.search_forward(text, prog, line, col,
-                                             wrap=False, ok=ok)
+        while 1:
+            res = self.engine.search_forward(text, prog, line, col, 0, ok)
             if not res:
                 break
             line, m = res
@@ -179,17 +130,13 @@ class ReplaceDialog(SearchDialogBase):
                 if new:
                     text.insert(first, new)
             col = i + len(new)
-            ok = False
+            ok = 0
         text.undo_block_stop()
         if first and last:
             self.show_hit(first, last)
         self.close()
 
-    def do_find(self, ok=False):
-        """Search for and highlight next occurrence of pattern in text.
-
-        No text replacement is done with this option.
-        """
+    def do_find(self, ok=0):
         if not self.engine.getprog():
             return False
         text = self.text
@@ -202,11 +149,10 @@ class ReplaceDialog(SearchDialogBase):
         first = "%d.%d" % (line, i)
         last = "%d.%d" % (line, j)
         self.show_hit(first, last)
-        self.ok = True
+        self.ok = 1
         return True
 
     def do_replace(self):
-        "Replace search pattern in text with replacement value."
         prog = self.engine.getprog()
         if not prog:
             return False
@@ -234,20 +180,12 @@ class ReplaceDialog(SearchDialogBase):
             text.insert(first, new)
         text.undo_block_stop()
         self.show_hit(first, text.index("insert"))
-        self.ok = False
+        self.ok = 0
         return True
 
     def show_hit(self, first, last):
-        """Highlight text between first and last indices.
-
-        Text is highlighted via the 'hit' tag and the marked
-        section is brought into view.
-
-        The colors from the 'hit' tag aren't currently shown
-        when the text is displayed.  This is due to the 'sel'
-        tag being added first, so the colors in the 'sel'
-        config are seen instead of the colors for 'hit'.
-        """
+        """Highlight text from 'first' to 'last'.
+        'first', 'last' - Text indices"""
         text = self.text
         text.mark_set("insert", first)
         text.tag_remove("sel", "1.0", "end")
@@ -261,19 +199,18 @@ class ReplaceDialog(SearchDialogBase):
         text.update_idletasks()
 
     def close(self, event=None):
-        "Close the dialog and remove hit tags."
         SearchDialogBase.close(self, event)
         self.text.tag_remove("hit", "1.0", "end")
 
 
 def _replace_dialog(parent):  # htest #
     from tkinter import Toplevel, Text, END, SEL
-    from tkinter.ttk import Frame, Button
+    from tkinter.ttk import Button
 
-    top = Toplevel(parent)
-    top.title("Test ReplaceDialog")
+    box = Toplevel(parent)
+    box.title("Test ReplaceDialog")
     x, y = map(int, parent.geometry().split('+')[1:])
-    top.geometry("+%d+%d" % (x, y + 175))
+    box.geometry("+%d+%d" % (x, y + 175))
 
     # mock undo delegator methods
     def undo_block_start():
@@ -282,9 +219,7 @@ def _replace_dialog(parent):  # htest #
     def undo_block_stop():
         pass
 
-    frame = Frame(top)
-    frame.pack()
-    text = Text(frame, inactiveselectbackground='gray')
+    text = Text(box, inactiveselectbackground='gray')
     text.undo_block_start = undo_block_start
     text.undo_block_stop = undo_block_stop
     text.pack()
@@ -296,12 +231,13 @@ def _replace_dialog(parent):  # htest #
         replace(text)
         text.tag_remove(SEL, "1.0", END)
 
-    button = Button(frame, text="Replace", command=show_replace)
+    button = Button(box, text="Replace", command=show_replace)
     button.pack()
 
 if __name__ == '__main__':
-    from unittest import main
-    main('idlelib.idle_test.test_replace', verbosity=2, exit=False)
+    import unittest
+    unittest.main('idlelib.idle_test.test_replace',
+                verbosity=2, exit=False)
 
     from idlelib.idle_test.htest import run
     run(_replace_dialog)

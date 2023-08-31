@@ -373,7 +373,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "libedit",
+  "requested_spec": "None",
   "sha256": "dba1412b331d39277fe5e1f3c2b67a37b590bfee5d50d418807e1508425cb08e",
   "size": 158764,
   "subdir": "osx-64",

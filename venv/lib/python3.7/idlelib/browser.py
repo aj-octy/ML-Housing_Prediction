@@ -16,7 +16,7 @@ import sys
 from idlelib.config import idleConf
 from idlelib import pyshell
 from idlelib.tree import TreeNode, TreeItem, ScrolledCanvas
-from idlelib.window import ListedToplevel
+from idlelib.windows import ListedToplevel
 
 
 file_open = None  # Method...Item and Class...Item use this.
@@ -29,10 +29,9 @@ def transform_children(child_dict, modname=None):
     The dictionary maps names to pyclbr information objects.
     Filter out imported objects.
     Augment class names with bases.
-    The insertion order of the dictionary is assumed to have been in line
-    number order, so sorting is not necessary.
+    Sort objects by line number.
 
-    The current tree only calls this once per child_dict as it saves
+    The current tree only calls this once per child_dic as it saves
     TreeItems once created.  A future tree and tests might violate this,
     so a check prevents multiple in-place augmentations.
     """
@@ -52,7 +51,7 @@ def transform_children(child_dict, modname=None):
                     supers.append(sname)
                 obj.name += '({})'.format(', '.join(supers))
             obs.append(obj)
-    return obs
+    return sorted(obs, key=lambda o: o.lineno)
 
 
 class ModuleBrowser:

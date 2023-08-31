@@ -155,7 +155,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "certifi",
+  "requested_spec": "None",
   "sha256": "7c22d10c2839174d96020774d6d1969017a660fd2ea4f6971cee93359ac4674f",
   "size": 154860,
   "subdir": "osx-64",

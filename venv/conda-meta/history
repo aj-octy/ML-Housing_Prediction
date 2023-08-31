@@ -1,4 +1,4 @@
-==> 2023-08-07 23:00:43 <==
+==> 2023-08-30 06:26:33 <==
 # cmd: /Users/aj/opt/anaconda3/bin/conda create -p venv python==3.7 -y
 # conda version: 23.3.1
 +defaults/osx-64::ca-certificates-2023.05.30-hecd8cb5_0
@@ -18,45 +18,3 @@
 +defaults/osx-64::xz-5.4.2-h6c40b1e_0
 +defaults/osx-64::zlib-1.2.13-h4dc903c_0
 # update specs: ['python==3.7']
-==> 2023-08-15 23:20:03 <==
-# cmd: /Users/aj/opt/anaconda3/bin/conda install -p /Users/aj/Desktop/2023/practice/py/Untitled_Folder/ml/LR/venv ipykernel --update-deps --force-reinstall
-# conda version: 23.3.1
--defaults/osx-64::libffi-3.2.1-h0a44026_1007
--defaults/osx-64::openssl-1.0.2u-h1de35cc_0
--defaults/osx-64::python-3.7.0-hc167b69_0
--defaults/osx-64::readline-7.0-h1de35cc_5
--defaults/osx-64::sqlite-3.33.0-hffcf06c_0
-+defaults/noarch::backcall-0.2.0-pyhd3eb1b0_0
-+defaults/noarch::decorator-5.1.1-pyhd3eb1b0_0
-+defaults/noarch::parso-0.8.3-pyhd3eb1b0_0
-+defaults/noarch::pexpect-4.8.0-pyhd3eb1b0_3
-+defaults/noarch::pickleshare-0.7.5-pyhd3eb1b0_1003
-+defaults/noarch::ptyprocess-0.7.0-pyhd3eb1b0_2
-+defaults/noarch::pygments-2.11.2-pyhd3eb1b0_0
-+defaults/noarch::python-dateutil-2.8.2-pyhd3eb1b0_0
-+defaults/noarch::six-1.16.0-pyhd3eb1b0_1
-+defaults/noarch::wcwidth-0.2.5-pyhd3eb1b0_0
-+defaults/osx-64::appnope-0.1.2-py37hecd8cb5_1001
-+defaults/osx-64::debugpy-1.5.1-py37he9d5cce_0
-+defaults/osx-64::entrypoints-0.4-py37hecd8cb5_0
-+defaults/osx-64::ipykernel-6.15.2-py37hecd8cb5_0
-+defaults/osx-64::ipython-7.31.1-py37hecd8cb5_1
-+defaults/osx-64::jedi-0.18.1-py37hecd8cb5_1
-+defaults/osx-64::jupyter_client-7.4.9-py37hecd8cb5_0
-+defaults/osx-64::jupyter_core-4.11.2-py37hecd8cb5_0
-+defaults/osx-64::libffi-3.4.4-hecd8cb5_0
-+defaults/osx-64::libsodium-1.0.18-h1de35cc_0
-+defaults/osx-64::matplotlib-inline-0.1.6-py37hecd8cb5_0
-+defaults/osx-64::nest-asyncio-1.5.6-py37hecd8cb5_0
-+defaults/osx-64::openssl-1.1.1v-hca72f7f_0
-+defaults/osx-64::packaging-22.0-py37hecd8cb5_0
-+defaults/osx-64::prompt-toolkit-3.0.36-py37hecd8cb5_0
-+defaults/osx-64::psutil-5.9.0-py37hca72f7f_0
-+defaults/osx-64::python-3.7.16-h218abb5_0
-+defaults/osx-64::pyzmq-23.2.0-py37he9d5cce_0
-+defaults/osx-64::readline-8.2-hca72f7f_0
-+defaults/osx-64::sqlite-3.41.2-h6c40b1e_0
-+defaults/osx-64::tornado-6.2-py37hca72f7f_0
-+defaults/osx-64::traitlets-5.7.1-py37hecd8cb5_0
-+defaults/osx-64::zeromq-4.3.4-h23ab428_0
-# update specs: ['openssl', 'libcxx', 'certifi', 'backcall', 'ipython', 'jupyter_client', 'zeromq', 'psutil', 'debugpy', 'jedi', 'pip', 'matplotlib-inline', 'zlib', 'sqlite', 'libedit', 'pygments', 'prompt-toolkit', 'jupyter_core', 'ncurses', 'appnope', 'wheel', 'tk', 'traitlets', 'six', 'tornado', 'python-dateutil', 'wcwidth', 'pickleshare', 'pyzmq', 'setuptools', 'pexpect', 'packaging', 'entrypoints', 'xz', 'decorator', 'nest-asyncio', 'libffi', 'libsodium', 'python=3.7', 'readline', 'parso', 'ca-certificates', 'ptyprocess', 'ipykernel']

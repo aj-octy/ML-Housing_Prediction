@@ -1,11 +1,11 @@
-"Test searchbase, coverage 98%."
-# The only thing not covered is inconsequential --
-# testing skipping of suite when self.needwrapbutton is false.
+'''tests idlelib.searchbase.
 
+Coverage: 99%. The only thing not covered is inconsequential --
+testing skipping of suite when self.needwrapbutton is false.
+'''
 import unittest
 from test.support import requires
-from tkinter import Text, Tk, Toplevel
-from tkinter.ttk import Frame
+from tkinter import Tk, Frame  ##, BooleanVar, StringVar
 from idlelib import searchengine as se
 from idlelib import searchbase as sdb
 from idlelib.idle_test.mock_idle import Func
@@ -22,7 +22,6 @@ from idlelib.idle_test.mock_idle import Func
 ##    se.BooleanVar = BooleanVar
 ##    se.StringVar = StringVar
 
-
 class SearchDialogBaseTest(unittest.TestCase):
 
     @classmethod
@@ -32,7 +31,6 @@ class SearchDialogBaseTest(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        cls.root.update_idletasks()
         cls.root.destroy()
         del cls.root
 
@@ -47,17 +45,16 @@ class SearchDialogBaseTest(unittest.TestCase):
         # open calls create_widgets, which needs default_command
         self.dialog.default_command = None
 
-        toplevel = Toplevel(self.root)
-        text = Text(toplevel)
-        self.dialog.open(text)
+        # Since text parameter of .open is not used in base class,
+        # pass dummy 'text' instead of tk.Text().
+        self.dialog.open('text')
         self.assertEqual(self.dialog.top.state(), 'normal')
         self.dialog.close()
         self.assertEqual(self.dialog.top.state(), 'withdrawn')
 
-        self.dialog.open(text, searchphrase="hello")
+        self.dialog.open('text', searchphrase="hello")
         self.assertEqual(self.dialog.ent.get(), 'hello')
-        toplevel.update_idletasks()
-        toplevel.destroy()
+        self.dialog.close()
 
     def test_create_widgets(self):
         self.dialog.create_entries = Func()
@@ -100,12 +97,11 @@ class SearchDialogBaseTest(unittest.TestCase):
         self.dialog.top = self.root
         frame, label = self.dialog.make_frame()
         self.assertEqual(label, '')
-        self.assertEqual(str(type(frame)), "<class 'tkinter.ttk.Frame'>")
-        # self.assertIsInstance(frame, Frame) fails when test is run by
-        # test_idle not run from IDLE editor.  See issue 33987 PR.
+        self.assertIsInstance(frame, Frame)
 
         frame, label = self.dialog.make_frame('testlabel')
         self.assertEqual(label['text'], 'testlabel')
+        self.assertIsInstance(frame, Frame)
 
     def btn_test_setup(self, meth):
         self.dialog.top = self.root
@@ -151,7 +147,7 @@ class SearchDialogBaseTest(unittest.TestCase):
         # Look for close button command in buttonframe
         closebuttoncommand = ''
         for child in self.dialog.buttonframe.winfo_children():
-            if child['text'] == 'Close':
+            if child['text'] == 'close':
                 closebuttoncommand = child['command']
         self.assertIn('close', closebuttoncommand)
 

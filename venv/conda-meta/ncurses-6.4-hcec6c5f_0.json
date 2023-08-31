@@ -22941,7 +22941,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "ncurses",
+  "requested_spec": "None",
   "sha256": "98884cab22ccf031daec9cc9ed6d1b8553f7001f5e2b5429959449d4e4a4ac2e",
   "size": 1042667,
   "subdir": "osx-64",

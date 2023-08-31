@@ -532,7 +532,7 @@ class _Stream:
                 if not buf:
                     break
                 t.append(buf)
-            buf = b"".join(t)
+            buf = "".join(t)
         else:
             buf = self._read(size)
         self.pos += len(buf)
@@ -545,7 +545,6 @@ class _Stream:
             return self.__read(size)
 
         c = len(self.dbuf)
-        t = [self.dbuf]
         while c < size:
             buf = self.__read(self.bufsize)
             if not buf:
@@ -554,27 +553,26 @@ class _Stream:
                 buf = self.cmp.decompress(buf)
             except self.exception:
                 raise ReadError("invalid compressed data")
-            t.append(buf)
+            self.dbuf += buf
             c += len(buf)
-        t = b"".join(t)
-        self.dbuf = t[size:]
-        return t[:size]
+        buf = self.dbuf[:size]
+        self.dbuf = self.dbuf[size:]
+        return buf
 
     def __read(self, size):
         """Return size bytes from stream. If internal buffer is empty,
            read another block from the stream.
         """
         c = len(self.buf)
-        t = [self.buf]
         while c < size:
             buf = self.fileobj.read(self.bufsize)
             if not buf:
                 break
-            t.append(buf)
+            self.buf += buf
             c += len(buf)
-        t = b"".join(t)
-        self.buf = t[size:]
-        return t[:size]
+        buf = self.buf[:size]
+        self.buf = self.buf[size:]
+        return buf
 # class _Stream
 
 class _StreamProxy(object):
@@ -1233,8 +1231,6 @@ class TarInfo(object):
 
             length, keyword = match.groups()
             length = int(length)
-            if length == 0:
-                raise InvalidHeaderError("invalid header")
             value = buf[match.end(2) + 1:match.start(1) + length - 1]
 
             # Normally, we could just use "utf-8" as the encoding and "strict"
@@ -1631,12 +1627,13 @@ class TarFile(object):
             raise ValueError("mode must be 'r', 'w' or 'x'")
 
         try:
-            from gzip import GzipFile
-        except ImportError:
+            import gzip
+            gzip.GzipFile
+        except (ImportError, AttributeError):
             raise CompressionError("gzip module is not available")
 
         try:
-            fileobj = GzipFile(name, mode + "b", compresslevel, fileobj)
+            fileobj = gzip.GzipFile(name, mode + "b", compresslevel, fileobj)
         except OSError:
             if fileobj is not None and mode == 'r':
                 raise ReadError("not a gzip file")
@@ -1664,11 +1661,12 @@ class TarFile(object):
             raise ValueError("mode must be 'r', 'w' or 'x'")
 
         try:
-            from bz2 import BZ2File
+            import bz2
         except ImportError:
             raise CompressionError("bz2 module is not available")
 
-        fileobj = BZ2File(fileobj or name, mode, compresslevel=compresslevel)
+        fileobj = bz2.BZ2File(fileobj or name, mode,
+                              compresslevel=compresslevel)
 
         try:
             t = cls.taropen(name, mode, fileobj, **kwargs)
@@ -1692,15 +1690,15 @@ class TarFile(object):
             raise ValueError("mode must be 'r', 'w' or 'x'")
 
         try:
-            from lzma import LZMAFile, LZMAError
+            import lzma
         except ImportError:
             raise CompressionError("lzma module is not available")
 
-        fileobj = LZMAFile(fileobj or name, mode, preset=preset)
+        fileobj = lzma.LZMAFile(fileobj or name, mode, preset=preset)
 
         try:
             t = cls.taropen(name, mode, fileobj, **kwargs)
-        except (LZMAError, EOFError):
+        except (lzma.LZMAError, EOFError):
             fileobj.close()
             if mode == 'r':
                 raise ReadError("not an lzma file")

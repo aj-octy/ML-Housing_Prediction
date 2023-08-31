@@ -57,10 +57,10 @@ if sys.platform == 'win32':
 
 
 def _init_timeout(timeout=CONNECTION_TIMEOUT):
-    return time.monotonic() + timeout
+    return time.time() + timeout
 
 def _check_timeout(t):
-    return time.monotonic() > t
+    return time.time() > t
 
 #
 #
@@ -102,7 +102,7 @@ def address_type(address):
         return 'AF_INET'
     elif type(address) is str and address.startswith('\\\\'):
         return 'AF_PIPE'
-    elif type(address) is str or util.is_abstract_socket_namespace(address):
+    elif type(address) is str:
         return 'AF_UNIX'
     else:
         raise ValueError('address type of %r unrecognized' % address)
@@ -587,8 +587,7 @@ class SocketListener(object):
         self._family = family
         self._last_accepted = None
 
-        if family == 'AF_UNIX' and not util.is_abstract_socket_namespace(address):
-            # Linux abstract socket namespaces do not need to be explicitly unlinked
+        if family == 'AF_UNIX':
             self._unlink = util.Finalize(
                 self, os.unlink, args=(address,), exitpriority=0
                 )
@@ -915,7 +914,7 @@ else:
                 selector.register(obj, selectors.EVENT_READ)
 
             if timeout is not None:
-                deadline = time.monotonic() + timeout
+                deadline = time.time() + timeout
 
             while True:
                 ready = selector.select(timeout)
@@ -923,7 +922,7 @@ else:
                     return [key.fileobj for (key, events) in ready]
                 else:
                     if timeout is not None:
-                        timeout = deadline - time.monotonic()
+                        timeout = deadline - time.time()
                         if timeout < 0:
                             return ready
 

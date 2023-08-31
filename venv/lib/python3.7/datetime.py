@@ -6,7 +6,6 @@ time zone and DST data sources.
 
 import time as _time
 import math as _math
-import sys
 
 def _cmp(x, y):
     return 0 if x == y else 1 if x > y else -1
@@ -718,31 +717,31 @@ class timedelta:
         if isinstance(other, timedelta):
             return self._cmp(other) == 0
         else:
-            return NotImplemented
+            return False
 
     def __le__(self, other):
         if isinstance(other, timedelta):
             return self._cmp(other) <= 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def __lt__(self, other):
         if isinstance(other, timedelta):
             return self._cmp(other) < 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def __ge__(self, other):
         if isinstance(other, timedelta):
             return self._cmp(other) >= 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def __gt__(self, other):
         if isinstance(other, timedelta):
             return self._cmp(other) > 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def _cmp(self, other):
         assert isinstance(other, timedelta)
@@ -808,19 +807,9 @@ class date:
 
         year, month, day (required, base 1)
         """
-        if (month is None and
-            isinstance(year, (bytes, str)) and len(year) == 4 and
-            1 <= ord(year[2:3]) <= 12):
+        if month is None and isinstance(year, bytes) and len(year) == 4 and \
+                1 <= year[2] <= 12:
             # Pickle support
-            if isinstance(year, str):
-                try:
-                    year = year.encode('latin1')
-                except UnicodeEncodeError:
-                    # More informative error message.
-                    raise ValueError(
-                        "Failed to encode latin1 string when unpickling "
-                        "a date object. "
-                        "pickle.load(data, encoding='latin1') is assumed.")
             self = object.__new__(cls)
             self.__setstate(year)
             self._hashcode = -1
@@ -867,7 +856,7 @@ class date:
             assert len(date_string) == 10
             return cls(*_parse_isoformat_date(date_string))
         except Exception:
-            raise ValueError(f'Invalid isoformat string: {date_string!r}')
+            raise ValueError('Invalid isoformat string: %s' % date_string)
 
 
     # Conversions to string
@@ -1194,18 +1183,8 @@ class time:
         tzinfo (default to None)
         fold (keyword only, default to zero)
         """
-        if (isinstance(hour, (bytes, str)) and len(hour) == 6 and
-            ord(hour[0:1])&0x7F < 24):
+        if isinstance(hour, bytes) and len(hour) == 6 and hour[0]&0x7F < 24:
             # Pickle support
-            if isinstance(hour, str):
-                try:
-                    hour = hour.encode('latin1')
-                except UnicodeEncodeError:
-                    # More informative error message.
-                    raise ValueError(
-                        "Failed to encode latin1 string when unpickling "
-                        "a time object. "
-                        "pickle.load(data, encoding='latin1') is assumed.")
             self = object.__new__(cls)
             self.__setstate(hour, minute or None)
             self._hashcode = -1
@@ -1261,31 +1240,31 @@ class time:
         if isinstance(other, time):
             return self._cmp(other, allow_mixed=True) == 0
         else:
-            return NotImplemented
+            return False
 
     def __le__(self, other):
         if isinstance(other, time):
             return self._cmp(other) <= 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def __lt__(self, other):
         if isinstance(other, time):
             return self._cmp(other) < 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def __ge__(self, other):
         if isinstance(other, time):
             return self._cmp(other) >= 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def __gt__(self, other):
         if isinstance(other, time):
             return self._cmp(other) > 0
         else:
-            return NotImplemented
+            _cmperror(self, other)
 
     def _cmp(self, other, allow_mixed=False):
         assert isinstance(other, time)
@@ -1389,7 +1368,7 @@ class time:
         try:
             return cls(*_parse_isoformat_time(time_string))
         except Exception:
-            raise ValueError(f'Invalid isoformat string: {time_string!r}')
+            raise ValueError('Invalid isoformat string: %s' % time_string)
 
 
     def strftime(self, fmt):
@@ -1516,18 +1495,8 @@ class datetime(date):
 
     def __new__(cls, year, month=None, day=None, hour=0, minute=0, second=0,
                 microsecond=0, tzinfo=None, *, fold=0):
-        if (isinstance(year, (bytes, str)) and len(year) == 10 and
-            1 <= ord(year[2:3])&0x7F <= 12):
+        if isinstance(year, bytes) and len(year) == 10 and 1 <= year[2]&0x7F <= 12:
             # Pickle support
-            if isinstance(year, str):
-                try:
-                    year = bytes(year, 'latin1')
-                except UnicodeEncodeError:
-                    # More informative error message.
-                    raise ValueError(
-                        "Failed to encode latin1 string when unpickling "
-                        "a datetime object. "
-                        "pickle.load(data, encoding='latin1') is assumed.")
             self = object.__new__(cls)
             self.__setstate(year, month)
             self._hashcode = -1
@@ -1603,14 +1572,6 @@ class datetime(date):
             # 23 hours at 1969-09-30 13:00:00 in Kwajalein.
             # Let's probe 24 hours in the past to detect a transition:
             max_fold_seconds = 24 * 3600
-
-            # On Windows localtime_s throws an OSError for negative values,
-            # thus we can't perform fold detection for values of time less
-            # than the max time fold. See comments in _datetimemodule's
-            # version of this method for more details.
-            if t < max_fold_seconds and sys.platform.startswith("win"):
-                return result
-
             y, m, d, hh, mm, ss = converter(t - max_fold_seconds)[:6]
             probe1 = cls(y, m, d, hh, mm, ss, us, tz)
             trans = result - probe1 - timedelta(0, max_fold_seconds)
@@ -1676,13 +1637,13 @@ class datetime(date):
         try:
             date_components = _parse_isoformat_date(dstr)
         except ValueError:
-            raise ValueError(f'Invalid isoformat string: {date_string!r}')
+            raise ValueError('Invalid isoformat string: %s' % date_string)
 
         if tstr:
             try:
                 time_components = _parse_isoformat_time(tstr)
             except ValueError:
-                raise ValueError(f'Invalid isoformat string: {date_string!r}')
+                raise ValueError('Invalid isoformat string: %s' % date_string)
         else:
             time_components = [0, 0, 0, 0, None]
 
@@ -2167,9 +2128,9 @@ class timezone(tzinfo):
         return (self._offset, self._name)
 
     def __eq__(self, other):
-        if isinstance(other, timezone):
-            return self._offset == other._offset
-        return NotImplemented
+        if type(other) != timezone:
+            return False
+        return self._offset == other._offset
 
     def __hash__(self):
         return hash(self._offset)
@@ -2226,7 +2187,7 @@ class timezone(tzinfo):
         raise TypeError("fromutc() argument must be a datetime instance"
                         " or None")
 
-    _maxoffset = timedelta(hours=24, microseconds=-1)
+    _maxoffset = timedelta(hours=23, minutes=59)
     _minoffset = -_maxoffset
 
     @staticmethod
@@ -2250,11 +2211,8 @@ class timezone(tzinfo):
         return f'UTC{sign}{hours:02d}:{minutes:02d}'
 
 timezone.utc = timezone._create(timedelta(0))
-# bpo-37642: These attributes are rounded to the nearest minute for backwards
-# compatibility, even though the constructor will accept a wider range of
-# values. This may change in the future.
-timezone.min = timezone._create(-timedelta(hours=23, minutes=59))
-timezone.max = timezone._create(timedelta(hours=23, minutes=59))
+timezone.min = timezone._create(timezone._minoffset)
+timezone.max = timezone._create(timezone._maxoffset)
 _EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
 
 # Some time zone algebra.  For a datetime x, let

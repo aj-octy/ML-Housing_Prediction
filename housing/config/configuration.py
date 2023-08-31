@@ -199,6 +199,7 @@ class Configuartion:
         except Exception as e:
             raise HousingException(e,sys) from e
 
+
     def get_model_pusher_config(self) -> ModelPusherConfig:
         try:
             time_stamp = f"{datetime.now().strftime('%Y%m%d%H%M%S')}"

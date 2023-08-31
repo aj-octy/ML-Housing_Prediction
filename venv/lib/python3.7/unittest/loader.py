@@ -229,9 +229,7 @@ class TestLoader(object):
             testFunc = getattr(testCaseClass, attrname)
             if not callable(testFunc):
                 return False
-            fullName = f'%s.%s.%s' % (
-                testCaseClass.__module__, testCaseClass.__qualname__, attrname
-            )
+            fullName = '%s.%s' % (testCaseClass.__module__, testFunc.__qualname__)
             return self.testNamePatterns is None or \
                 any(fnmatchcase(fullName, pattern) for pattern in self.testNamePatterns)
         testFnNames = list(filter(shouldIncludeMethod, dir(testCaseClass)))

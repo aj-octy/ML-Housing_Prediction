@@ -1,12 +1,12 @@
-"Test autoexpand, coverage 100%."
-
-from idlelib.autoexpand import AutoExpand
+"""Unit tests for idlelib.autoexpand"""
 import unittest
 from test.support import requires
 from tkinter import Text, Tk
+#from idlelib.idle_test.mock_tk import Text
+from idlelib.autoexpand import AutoExpand
 
 
-class DummyEditwin:
+class Dummy_Editwin:
     # AutoExpand.__init__ only needs .text
     def __init__(self, text):
         self.text = text
@@ -15,26 +15,14 @@ class AutoExpandTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        requires('gui')
-        cls.tk = Tk()
-        cls.text = Text(cls.tk)
-        cls.auto_expand = AutoExpand(DummyEditwin(cls.text))
+        if 'tkinter' in str(Text):
+            requires('gui')
+            cls.tk = Tk()
+            cls.text = Text(cls.tk)
+        else:
+            cls.text = Text()
+        cls.auto_expand = AutoExpand(Dummy_Editwin(cls.text))
         cls.auto_expand.bell = lambda: None
-
-# If mock_tk.Text._decode understood indexes 'insert' with suffixed 'linestart',
-# 'wordstart', and 'lineend', used by autoexpand, we could use the following
-# to run these test on non-gui machines (but check bell).
-##        try:
-##            requires('gui')
-##            #raise ResourceDenied()  # Uncomment to test mock.
-##        except ResourceDenied:
-##            from idlelib.idle_test.mock_tk import Text
-##            cls.text = Text()
-##            cls.text.bell = lambda: None
-##        else:
-##            from tkinter import Tk, Text
-##            cls.tk = Tk()
-##            cls.text = Text(cls.tk)
 
     @classmethod
     def tearDownClass(cls):

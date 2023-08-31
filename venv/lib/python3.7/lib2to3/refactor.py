@@ -14,7 +14,6 @@ __author__ = "Guido van Rossum <guido@python.org>"
 # Python imports
 import io
 import os
-import pkgutil
 import sys
 import logging
 import operator
@@ -31,12 +30,13 @@ from . import btm_matcher as bm
 def get_all_fix_names(fixer_pkg, remove_prefix=True):
     """Return a sorted list of all available fix names in the given package."""
     pkg = __import__(fixer_pkg, [], [], ["*"])
+    fixer_dir = os.path.dirname(pkg.__file__)
     fix_names = []
-    for finder, name, ispkg in pkgutil.iter_modules(pkg.__path__):
-        if name.startswith("fix_"):
+    for name in sorted(os.listdir(fixer_dir)):
+        if name.startswith("fix_") and name.endswith(".py"):
             if remove_prefix:
                 name = name[4:]
-            fix_names.append(name)
+            fix_names.append(name[:-3])
     return fix_names
 
 
@@ -514,7 +514,7 @@ class RefactoringTool(object):
         set.
         """
         try:
-            fp = io.open(filename, "w", encoding=encoding, newline='')
+            fp = io.open(filename, "w", encoding=encoding)
         except OSError as err:
             self.log_error("Can't create %s: %s", filename, err)
             return

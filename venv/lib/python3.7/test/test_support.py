@@ -264,7 +264,7 @@ class TestSupport(unittest.TestCase):
         with support.temp_cwd(name=TESTFN):
             self.assertEqual(os.path.basename(os.getcwd()), TESTFN)
         self.assertFalse(os.path.exists(TESTFN))
-        self.assertEqual(os.getcwd(), here)
+        self.assertTrue(os.path.basename(os.getcwd()), here)
 
 
     def test_temp_cwd__name_none(self):
@@ -456,7 +456,7 @@ class TestSupport(unittest.TestCase):
         # pending child process
         support.reap_children()
 
-    def check_options(self, args, func, expected=None):
+    def check_options(self, args, func):
         code = f'from test.support import {func}; print(repr({func}()))'
         cmd = [sys.executable, *args, '-c', code]
         env = {key: value for key, value in os.environ.items()
@@ -466,9 +466,7 @@ class TestSupport(unittest.TestCase):
                               stderr=subprocess.DEVNULL,
                               universal_newlines=True,
                               env=env)
-        if expected is None:
-            expected = args
-        self.assertEqual(proc.stdout.rstrip(), repr(expected))
+        self.assertEqual(proc.stdout.rstrip(), repr(args))
         self.assertEqual(proc.returncode, 0)
 
     def test_args_from_interpreter_flags(self):
@@ -484,7 +482,6 @@ class TestSupport(unittest.TestCase):
             ['-v'],
             ['-b'],
             ['-q'],
-            ['-I'],
             # same option multiple times
             ['-bb'],
             ['-vvv'],
@@ -502,9 +499,6 @@ class TestSupport(unittest.TestCase):
         ):
             with self.subTest(opts=opts):
                 self.check_options(opts, 'args_from_interpreter_flags')
-
-        self.check_options(['-I', '-E', '-s'], 'args_from_interpreter_flags',
-                           ['-I'])
 
     def test_optim_args_from_interpreter_flags(self):
         # Test test.support.optim_args_from_interpreter_flags()
@@ -529,7 +523,6 @@ class TestSupport(unittest.TestCase):
         test_access = Test('test.test_os.FileTests.test_access')
         test_chdir = Test('test.test_os.Win32ErrorTests.test_chdir')
 
-        # Test acceptance
         with support.swap_attr(support, '_match_test_func', None):
             # match all
             support.set_match_tests([])
@@ -537,91 +530,44 @@ class TestSupport(unittest.TestCase):
             self.assertTrue(support.match_test(test_chdir))
 
             # match all using None
-            support.set_match_tests(None, None)
+            support.set_match_tests(None)
             self.assertTrue(support.match_test(test_access))
             self.assertTrue(support.match_test(test_chdir))
 
             # match the full test identifier
-            support.set_match_tests([test_access.id()], None)
+            support.set_match_tests([test_access.id()])
             self.assertTrue(support.match_test(test_access))
             self.assertFalse(support.match_test(test_chdir))
 
             # match the module name
-            support.set_match_tests(['test_os'], None)
+            support.set_match_tests(['test_os'])
             self.assertTrue(support.match_test(test_access))
             self.assertTrue(support.match_test(test_chdir))
 
             # Test '*' pattern
-            support.set_match_tests(['test_*'], None)
+            support.set_match_tests(['test_*'])
             self.assertTrue(support.match_test(test_access))
             self.assertTrue(support.match_test(test_chdir))
 
             # Test case sensitivity
-            support.set_match_tests(['filetests'], None)
+            support.set_match_tests(['filetests'])
             self.assertFalse(support.match_test(test_access))
-            support.set_match_tests(['FileTests'], None)
+            support.set_match_tests(['FileTests'])
             self.assertTrue(support.match_test(test_access))
 
             # Test pattern containing '.' and a '*' metacharacter
-            support.set_match_tests(['*test_os.*.test_*'], None)
+            support.set_match_tests(['*test_os.*.test_*'])
             self.assertTrue(support.match_test(test_access))
             self.assertTrue(support.match_test(test_chdir))
 
             # Multiple patterns
-            support.set_match_tests([test_access.id(), test_chdir.id()], None)
+            support.set_match_tests([test_access.id(), test_chdir.id()])
             self.assertTrue(support.match_test(test_access))
             self.assertTrue(support.match_test(test_chdir))
 
-            support.set_match_tests(['test_access', 'DONTMATCH'], None)
+            support.set_match_tests(['test_access', 'DONTMATCH'])
             self.assertTrue(support.match_test(test_access))
             self.assertFalse(support.match_test(test_chdir))
-
-        # Test rejection
-        with support.swap_attr(support, '_match_test_func', None):
-            # match all
-            support.set_match_tests(ignore_patterns=[])
-            self.assertTrue(support.match_test(test_access))
-            self.assertTrue(support.match_test(test_chdir))
-
-            # match all using None
-            support.set_match_tests(None, None)
-            self.assertTrue(support.match_test(test_access))
-            self.assertTrue(support.match_test(test_chdir))
-
-            # match the full test identifier
-            support.set_match_tests(None, [test_access.id()])
-            self.assertFalse(support.match_test(test_access))
-            self.assertTrue(support.match_test(test_chdir))
-
-            # match the module name
-            support.set_match_tests(None, ['test_os'])
-            self.assertFalse(support.match_test(test_access))
-            self.assertFalse(support.match_test(test_chdir))
-
-            # Test '*' pattern
-            support.set_match_tests(None, ['test_*'])
-            self.assertFalse(support.match_test(test_access))
-            self.assertFalse(support.match_test(test_chdir))
-
-            # Test case sensitivity
-            support.set_match_tests(None, ['filetests'])
-            self.assertTrue(support.match_test(test_access))
-            support.set_match_tests(None, ['FileTests'])
-            self.assertFalse(support.match_test(test_access))
-
-            # Test pattern containing '.' and a '*' metacharacter
-            support.set_match_tests(None, ['*test_os.*.test_*'])
-            self.assertFalse(support.match_test(test_access))
-            self.assertFalse(support.match_test(test_chdir))
-
-            # Multiple patterns
-            support.set_match_tests(None, [test_access.id(), test_chdir.id()])
-            self.assertFalse(support.match_test(test_access))
-            self.assertFalse(support.match_test(test_chdir))
-
-            support.set_match_tests(None, ['test_access', 'DONTMATCH'])
-            self.assertFalse(support.match_test(test_access))
-            self.assertTrue(support.match_test(test_chdir))
 
     def test_fd_count(self):
         # We cannot test the absolute value of fd_count(): on old Linux

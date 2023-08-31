@@ -92,5 +92,5 @@ class AutoExpand:
 
 
 if __name__ == '__main__':
-    from unittest import main
-    main('idlelib.idle_test.test_autoexpand', verbosity=2)
+    import unittest
+    unittest.main('idlelib.idle_test.test_autoexpand', verbosity=2)

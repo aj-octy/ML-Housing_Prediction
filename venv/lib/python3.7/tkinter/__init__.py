@@ -61,7 +61,7 @@ def _stringify(value):
     if isinstance(value, (list, tuple)):
         if len(value) == 1:
             value = _stringify(value[0])
-            if _magic_re.search(value):
+            if value[0] == '{':
                 value = '{%s}' % value
         else:
             value = '{%s}' % _join(value)
@@ -72,10 +72,7 @@ def _stringify(value):
         elif _magic_re.search(value):
             # add '\' before special characters and spaces
             value = _magic_re.sub(r'\\\1', value)
-            value = value.replace('\n', r'\n')
             value = _space_re.sub(r'\\\1', value)
-            if value[0] == '"':
-                value = '\\' + value
         elif value[0] == '"' or _space_re.search(value):
             value = '{%s}' % value
     return value
@@ -969,7 +966,7 @@ class Misc:
         """Return window class name of this widget."""
         return self.tk.call('winfo', 'class', self._w)
     def winfo_colormapfull(self):
-        """Return True if at the last color request the colormap was full."""
+        """Return true if at the last color request the colormap was full."""
         return self.tk.getboolean(
             self.tk.call('winfo', 'colormapfull', self._w))
     def winfo_containing(self, rootX, rootY, displayof=0):
@@ -2829,7 +2826,7 @@ class Listbox(Widget, XView, YView):
                  'selection', 'clear', first, last)
     select_clear = selection_clear
     def selection_includes(self, index):
-        """Return True if INDEX is part of the selection."""
+        """Return 1 if INDEX is part of the selection."""
         return self.tk.getboolean(self.tk.call(
             self._w, 'selection', 'includes', index))
     select_includes = selection_includes
@@ -3750,7 +3747,7 @@ class Spinbox(Widget, XView):
         select to commands. If the selection isn't currently in
         the spinbox, then a new selection is created to include
         the characters between index and the most recent selection
-        anchor point, inclusive.
+        anchor point, inclusive. Returns an empty string.
         """
         return self.selection("adjust", index)
 
@@ -3758,7 +3755,7 @@ class Spinbox(Widget, XView):
         """Clear the selection
 
         If the selection isn't in this widget then the
-        command has no effect.
+        command has no effect. Returns an empty string.
         """
         return self.selection("clear")
 
@@ -3766,9 +3763,9 @@ class Spinbox(Widget, XView):
         """Sets or gets the currently selected element.
 
         If a spinbutton element is specified, it will be
-        displayed depressed.
+        displayed depressed
         """
-        return self.tk.call(self._w, 'selection', 'element', element)
+        return self.selection("element", element)
 
 ###########################################################################
 

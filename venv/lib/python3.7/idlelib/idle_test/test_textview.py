@@ -1,17 +1,19 @@
-"""Test textview, coverage 100%.
+'''Test idlelib.textview.
 
 Since all methods and functions create (or destroy) a ViewWindow, which
 is a widget containing a widget, etcetera, all tests must be gui tests.
 Using mock Text would not change this.  Other mocks are used to retrieve
 information about calls.
-"""
+
+Coverage: 100%.
+'''
 from idlelib import textview as tv
 from test.support import requires
 requires('gui')
 
-import os
 import unittest
-from tkinter import Tk, TclError, CHAR, NONE, WORD
+import os
+from tkinter import Tk
 from tkinter.ttk import Button
 from idlelib.idle_test.mock_idle import Func
 from idlelib.idle_test.mock_tk import Mbox_func
@@ -69,65 +71,14 @@ class ViewWindowTest(unittest.TestCase):
         view.destroy()
 
 
-class AutoHideScrollbarTest(unittest.TestCase):
-    # Method set is tested in ScrollableTextFrameTest
-    def test_forbidden_geometry(self):
-        scroll = tv.AutoHideScrollbar(root)
-        self.assertRaises(TclError, scroll.pack)
-        self.assertRaises(TclError, scroll.place)
-
-
-class ScrollableTextFrameTest(unittest.TestCase):
+class TextFrameTest(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
+        "By itself, this tests that file parsed without exception."
         cls.root = root = Tk()
         root.withdraw()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.root.update_idletasks()
-        cls.root.destroy()
-        del cls.root
-
-    def make_frame(self, wrap=NONE, **kwargs):
-        frame = tv.ScrollableTextFrame(self.root, wrap=wrap, **kwargs)
-        def cleanup_frame():
-            frame.update_idletasks()
-            frame.destroy()
-        self.addCleanup(cleanup_frame)
-        return frame
-
-    def test_line1(self):
-        frame = self.make_frame()
-        frame.text.insert('1.0', 'test text')
-        self.assertEqual(frame.text.get('1.0', '1.end'), 'test text')
-
-    def test_horiz_scrollbar(self):
-        # The horizontal scrollbar should be shown/hidden according to
-        # the 'wrap' setting: It should only be shown when 'wrap' is
-        # set to NONE.
-
-        # wrap = NONE -> with horizontal scrolling
-        frame = self.make_frame(wrap=NONE)
-        self.assertEqual(frame.text.cget('wrap'), NONE)
-        self.assertIsNotNone(frame.xscroll)
-
-        # wrap != NONE -> no horizontal scrolling
-        for wrap in [CHAR, WORD]:
-            with self.subTest(wrap=wrap):
-                frame = self.make_frame(wrap=wrap)
-                self.assertEqual(frame.text.cget('wrap'), wrap)
-                self.assertIsNone(frame.xscroll)
-
-
-class ViewFrameTest(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        cls.root = root = Tk()
-        root.withdraw()
-        cls.frame = tv.ViewFrame(root, 'test text')
+        cls.frame = tv.TextFrame(root, 'test text')
 
     @classmethod
     def tearDownClass(cls):
@@ -158,7 +109,7 @@ class ViewFunctionTest(unittest.TestCase):
         view = tv.view_text(root, 'Title', 'test text', modal=False)
         self.assertIsInstance(view, tv.ViewWindow)
         self.assertIsInstance(view.viewframe, tv.ViewFrame)
-        view.viewframe.ok()
+        view.ok()
 
     def test_view_file(self):
         view = tv.view_file(root, 'Title', __file__, 'ascii', modal=False)
@@ -177,14 +128,10 @@ class ViewFunctionTest(unittest.TestCase):
     def test_bad_encoding(self):
         p = os.path
         fn = p.abspath(p.join(p.dirname(__file__), '..', 'CREDITS.txt'))
+        tv.showerror.title = None
         view = tv.view_file(root, 'Title', fn, 'ascii', modal=False)
         self.assertIsNone(view)
         self.assertEqual(tv.showerror.title, 'Unicode Decode Error')
-
-    def test_nowrap(self):
-        view = tv.view_text(root, 'Title', 'test', modal=False, wrap='none')
-        text_widget = view.viewframe.textframe.text
-        self.assertEqual(text_widget.cget('wrap'), 'none')
 
 
 # Call ViewWindow with _utest=True.

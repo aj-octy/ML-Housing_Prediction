@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter.ttk import Frame, Scrollbar
+from tkinter.ttk import Scrollbar
 
 from idlelib import macosx
 
@@ -142,8 +142,6 @@ def _scrolled_list(parent):  # htest #
         scrolled_list.append("Item %02d" % i)
 
 if __name__ == '__main__':
-    from unittest import main
-    main('idlelib.idle_test.test_scrolledlist', verbosity=2,)
-
+    # At the moment, test_scrolledlist merely creates instance, like htest.
     from idlelib.idle_test.htest import run
     run(_scrolled_list)

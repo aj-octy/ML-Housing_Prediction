@@ -81,7 +81,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "zlib",
+  "requested_spec": "None",
   "sha256": "2cfdc6005ab442980103475814607a8c022a3bc3a3546dd09a28b38f18a20186",
   "size": 98178,
   "subdir": "osx-64",

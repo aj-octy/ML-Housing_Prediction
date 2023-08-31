@@ -1,13 +1,14 @@
-"Test undo, coverage 77%."
-# Only test UndoDelegator so far.
+"""Unittest for UndoDelegator in idlelib.undo.py.
 
-from idlelib.undo import UndoDelegator
-import unittest
+Coverage about 80% (retest).
+"""
 from test.support import requires
 requires('gui')
 
+import unittest
 from unittest.mock import Mock
 from tkinter import Text, Tk
+from idlelib.undo import UndoDelegator
 from idlelib.percolator import Percolator
 
 
@@ -129,7 +130,6 @@ class UndoDelegatorTest(unittest.TestCase):
         for i in range(max_undo + 10):
             text.insert('insert', 'foo')
             self.assertLessEqual(len(self.delegator.undolist), max_undo)
-
 
 if __name__ == '__main__':
     unittest.main(verbosity=2, exit=False)

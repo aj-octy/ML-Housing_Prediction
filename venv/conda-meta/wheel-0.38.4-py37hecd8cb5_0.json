@@ -365,7 +365,7 @@
     ],
     "paths_version": 1
   },
-  "requested_spec": "wheel",
+  "requested_spec": "None",
   "sha256": "4a41daeb284c716214d170c19931a58a7714f0bb1fbf732c2887e68eddd8e7ca",
   "size": 66392,
   "subdir": "osx-64",

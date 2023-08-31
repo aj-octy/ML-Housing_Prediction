@@ -14,6 +14,8 @@ housing/constant/__init__.py
 housing/entity/__init__.py
 housing/entity/artifact_entity.py
 housing/entity/config_entity.py
+housing/entity/experiment.py
+housing/entity/housing_predictor.py
 housing/entity/model_factory.py
 housing/exception/__init__.py
 housing/logger/__init__.py

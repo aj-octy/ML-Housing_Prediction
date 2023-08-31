@@ -781,9 +781,8 @@ class CCompiler:
             for incl in includes:
                 f.write("""#include "%s"\n""" % incl)
             f.write("""\
-int main (int argc, char **argv) {
+main (int argc, char **argv) {
     %s();
-    return 0;
 }
 """ % funcname)
         finally:
